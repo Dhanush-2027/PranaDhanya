@@ -1,6 +1,8 @@
-# AI Powered Smart Agriculture & Livestock Disease Diagnosis Portal
+# PranaDhanya: AI Powered Crop & Livestock Management Portal
 
-This repository contains the complete production-ready source code for the **AI Powered Smart Agriculture & Livestock Disease Diagnosis Portal**.
+PranaDhanya is a Java Spring Boot web application that helps farmers detect crop and livestock diseases using AI, predict crops, yields, prices, and fertilizers, book veterinary appointments, and manage records through secure Farmer, Vet, and Admin dashboards with PostgreSQL and REST APIs.
+
+This repository contains the complete production-ready source code.
 
 ## Project Modules
 1. **`backend/`**: Spring Boot 3 web application using Spring Security JWT authentication and Thymeleaf frontend layout engine.
