@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Admin Console | AGRI-DIAGNOSE</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom Style -->
+    <link href="../css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Topbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark main-navbar sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="#">
+                <i class="fa-solid fa-lock text-warning"></i> ADMIN CONSOLE
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminTopbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="adminTopbar">
+                <div class="ms-auto d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                    <button class="btn btn-outline-light btn-sm" onclick="toggleDarkMode()">
+                        <i class="fa-solid fa-circle-half-stroke"></i> <span class="d-none d-md-inline">Theme</span>
+                    </button>
+
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-user-shield fs-4"></i>
+                        <span class="font-weight-semibold" id="adminHeaderName">System Administrator</span>
+                    </div>
+
+                    <button onclick="handleLogout()" class="btn btn-danger btn-sm px-3"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Wrapper -->
+    <div class="portal-wrapper">
+        <div class="portal-sidebar">
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link active" onclick="switchPane('systemStats', this)">
+                        <i class="fa-solid fa-server"></i> System Telemetry
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('userDirectory', this)">
+                        <i class="fa-solid fa-users"></i> Users Directory
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('warningBroadcaster', this)">
+                        <i class="fa-solid fa-bullhorn"></i> Alert Broadcaster
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <main class="portal-content">
+            
+            <!-- PANE 1: SYSTEM STATS -->
+            <div id="pane-systemStats" class="pane-div">
+                <div class="row g-4">
+                    <!-- Telemetry Metrics -->
+                    <div class="col-md-3">
+                        <div class="custom-card text-center bg-white">
+                            <h2 class="text-success font-weight-bold" id="cpuUsageVal">24%</h2>
+                            <p class="text-muted mb-0 small"><i class="fa-solid fa-cpu me-1"></i> CPU Utilization</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="custom-card text-center bg-white">
+                            <h2 class="text-success font-weight-bold" id="ramUsageVal">1.8 GB</h2>
+                            <p class="text-muted mb-0 small"><i class="fa-solid fa-memory me-1"></i> RAM Footprint</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="custom-card text-center bg-white">
+                            <h2 class="text-success font-weight-bold" id="networkVal">128 kb/s</h2>
+                            <p class="text-muted mb-0 small"><i class="fa-solid fa-ethernet me-1"></i> Network Traffic</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="custom-card text-center bg-white">
+                            <h2 class="text-success font-weight-bold" id="dbStatusVal">Connected</h2>
+                            <p class="text-muted mb-0 small"><i class="fa-solid fa-database me-1"></i> PostgreSQL Status</p>
+                        </div>
+                    </div>
+
+                    <!-- Overall System Counts -->
+                    <div class="col-md-4">
+                        <div class="custom-card bg-white text-center">
+                            <h3 class="text-primary font-weight-bold" id="totalUsersCount">0</h3>
+                            <p class="text-muted mb-0 small">Enrolled Profiles</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="custom-card bg-white text-center">
+                            <h3 class="text-primary font-weight-bold" id="totalPlantCount">0</h3>
+                            <p class="text-muted mb-0 small">Crop Pathology Inquiries</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="custom-card bg-white text-center">
+                            <h3 class="text-primary font-weight-bold" id="totalAnimalCount">0</h3>
+                            <p class="text-muted mb-0 small">Livestock Sickness Records</p>
+                        </div>
+                    </div>
+
+                    <!-- Active Outbreaks Surveillance Mapping -->
+                    <div class="col-12">
+                        <div class="custom-card bg-white">
+                            <h3><i class="fa-solid fa-shield-virus text-danger me-2"></i> Active Epidemic Warnings Coordinate Maps</h3>
+                            <div class="table-responsive mt-3">
+                                <table class="table table-hover align-middle small" id="outbreaksTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Case ID</th>
+                                            <th>Type</th>
+                                            <th>Pathogen Category</th>
+                                            <th>Latitude</th>
+                                            <th>Longitude</th>
+                                            <th>Danger Severity</th>
+                                            <th>Timestamp</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamically Populated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 2: USER DIRECTORY -->
+            <div id="pane-userDirectory" class="pane-div d-none">
+                <div class="custom-card bg-white">
+                    <h3 class="mb-4"><i class="fa-solid fa-users text-success me-2"></i> User Directory &amp; Security Accounts Console</h3>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle small" id="usersTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dynamically Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 3: ALERTS BROADCASTER -->
+            <div id="pane-warningBroadcaster" class="pane-div d-none">
+                <div class="custom-card bg-white" style="max-width: 600px;">
+                    <h3 class="mb-3"><i class="fa-solid fa-bullhorn text-danger me-2"></i> National Outbreak Alert Broadcast</h3>
+                    <p class="text-muted small">Broadcast global warnings (NDLM notifications) to all farmers and vet officers regarding epidemic containment protocols.</p>
+                    <hr>
+                    <form id="broadcastForm" onsubmit="submitBroadcast(event)">
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold">Alert Title</label>
+                            <input type="text" id="alertTitle" class="form-control" placeholder="e.g. Critical Lumpy Skin Outbreak in Mandya" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label font-weight-semibold">Detailed Warning Message</label>
+                            <textarea id="alertMessage" class="form-control" rows="4" placeholder="Advise farmers on quarantine isolation guidelines, vaccination camps, etc." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100"><i class="fa-solid fa-satellite-dish me-2"></i> Broadcast Global Alert</button>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- RESET PASSWORD MODAL -->
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title font-weight-bold" id="resetModalLabel">Reset Account Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="resetPasswordForm" onsubmit="submitResetPassword(event)">
+                        <input type="hidden" id="resetUserId">
+                        <div class="mb-3">
+                            <label class="form-label">New Password</label>
+                            <input type="password" id="resetNewPass" class="form-control" placeholder="Enter new password" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Apply New Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const API_BASE = "http://localhost:8080/api";
+        const token = localStorage.getItem("agri_token");
+        if (!token) {
+            window.location.href = "../index.html";
+        }
+
+        // Fetch administrative statistics and lists
+        function loadAdminDashboardData() {
+            fetch(`${API_BASE}/admin/dashboard-data`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            })
+            .then(res => {
+                if(res.status === 401) {
+                    handleLogout();
+                }
+                return res.json();
+            })
+            .then(data => {
+                // Header details
+                document.getElementById('adminHeaderName').innerText = data.user.fullName;
+
+                // Telemetry
+                document.getElementById('cpuUsageVal').innerText = data.cpuUsage;
+                document.getElementById('ramUsageVal').innerText = data.ramUsage;
+                document.getElementById('networkVal').innerText = data.networkTraffic;
+                document.getElementById('dbStatusVal').innerText = data.dbStatus;
+
+                // Counts
+                document.getElementById('totalUsersCount').innerText = data.allUsers.length;
+                document.getElementById('totalPlantCount').innerText = data.plantCases.length;
+                document.getElementById('totalAnimalCount').innerText = data.animalCases.length;
+
+                // Users table
+                const uBody = document.querySelector('#usersTable tbody');
+                uBody.innerHTML = '';
+                data.allUsers.forEach(u => {
+                    let statusClass = u.active ? 'bg-success' : 'bg-danger';
+                    let statusText = u.active ? 'Active' : 'Blocked';
+                    
+                    let toggleActionBtn = u.active ? 
+                        `<button class="btn btn-sm btn-outline-danger py-1" onclick="changeUserStatus(${u.id}, false)"><i class="fa-solid fa-ban"></i> Block</button>` :
+                        `<button class="btn btn-sm btn-outline-success py-1" onclick="changeUserStatus(${u.id}, true)"><i class="fa-solid fa-user-check"></i> Activate</button>`;
+
+                    uBody.innerHTML += `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td class="font-weight-semibold">${u.username}</td>
+                            <td>${u.fullName}</td>
+                            <td>${u.email}</td>
+                            <td><span class="badge bg-secondary">${u.role.replace('ROLE_', '')}</span></td>
+                            <td><span class="badge ${statusClass}">${statusText}</span></td>
+                            <td class="d-flex gap-2">
+                                ${toggleActionBtn}
+                                <button class="btn btn-sm btn-outline-primary py-1" onclick="openResetPasswordModal(${u.id})"><i class="fa-solid fa-key"></i> Pass</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                // Outbreaks table
+                const oBody = document.querySelector('#outbreaksTable tbody');
+                oBody.innerHTML = '';
+                
+                // Merge plant cases and livestock cases having high severity
+                let index = 1;
+                data.plantCases.forEach(pc => {
+                    if (pc.severityScore > 0.6) {
+                        oBody.innerHTML += `
+                            <tr class="table-danger">
+                                <td>P-${pc.id}</td>
+                                <td>Plant</td>
+                                <td class="font-weight-semibold">${pc.diseaseName}</td>
+                                <td>${pc.latitude || '12.9716'}</td>
+                                <td>${pc.longitude || '77.5946'}</td>
+                                <td><span class="badge bg-danger">Critical</span></td>
+                                <td>${pc.timestamp.replace('T', ' ').split('.')[0]}</td>
+                            </tr>
+                        `;
+                        index++;
+                    }
+                });
+
+                data.animalCases.forEach(ac => {
+                    if (ac.severity === 'High') {
+                        oBody.innerHTML += `
+                            <tr class="table-danger">
+                                <td>L-${ac.id}</td>
+                                <td>Livestock</td>
+                                <td class="font-weight-semibold">${ac.diseaseName}</td>
+                                <td>${ac.latitude || '12.9716'}</td>
+                                <td>${ac.longitude || '77.5946'}</td>
+                                <td><span class="badge bg-danger">Critical</span></td>
+                                <td>${ac.timestamp.replace('T', ' ').split('.')[0]}</td>
+                            </tr>
+                        `;
+                        index++;
+                    }
+                });
+
+                if (oBody.children.length === 0) {
+                    oBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">No active high-severity outbreak flags in system coordinates database.</td></tr>`;
+                }
+            })
+            .catch(err => console.error("Error loading admin telemetry:", err));
+        }
+
+        // Change user state (Block / Enable)
+        function changeUserStatus(userId, status) {
+            let payload = {
+                userId: userId,
+                active: status
+            };
+
+            fetch(`${API_BASE}/admin/users/status`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert(`User status updated.`);
+                    loadAdminDashboardData();
+                }
+            });
+        }
+
+        function openResetPasswordModal(userId) {
+            document.getElementById('resetUserId').value = userId;
+            document.getElementById('resetNewPass').value = '';
+            var myModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+            myModal.show();
+        }
+
+        function submitResetPassword(e) {
+            e.preventDefault();
+            let payload = {
+                userId: document.getElementById('resetUserId').value,
+                password: document.getElementById('resetNewPass').value
+            };
+
+            fetch(`${API_BASE}/admin/users/reset-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if(res.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal')).hide();
+                    alert('User password updated successfully.');
+                }
+            });
+        }
+
+        // Broadcast alert
+        function submitBroadcast(e) {
+            e.preventDefault();
+            let payload = {
+                title: document.getElementById('alertTitle').value,
+                message: document.getElementById('alertMessage').value
+            };
+
+            fetch(`${API_BASE}/admin/alerts/broadcast`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('National Outbreak Warning broadcasted successfully!');
+                    document.getElementById('broadcastForm').reset();
+                    loadAdminDashboardData();
+                } else {
+                    alert('Broadcast failed.');
+                }
+            });
+        }
+
+        function switchPane(paneName, linkElement) {
+            document.querySelectorAll('.pane-div').forEach(el => el.classList.add('d-none'));
+            document.getElementById('pane-' + paneName).classList.remove('d-none');
+            
+            document.querySelectorAll('.sidebar-nav-link').forEach(el => el.classList.remove('active'));
+            if (linkElement) {
+                linkElement.classList.add('active');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            window.location.href = "../index.html";
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('agri-theme', isDark ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('agri-theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            loadAdminDashboardData();
+        });
+    </script>
+</body>
+</html>

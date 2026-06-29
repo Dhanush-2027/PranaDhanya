@@ -1,0 +1,52 @@
+env_file:
+      - .env
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: agri_postgres
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  ai-service:
+    build:
+      context: ./ai_service
+    container_name: agri_ai_service
+    restart: always
+    ports:
+      - "8000:8000"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: agri_backend
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - ai-service
+    env_file:
+      - .env
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_JPA_DATABASE_PLATFORM=${SPRING_JPA_DATABASE_PLATFORM}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - APP_AI_SERVICE_URL=${APP_AI_SERVICE_URL}
+    volumes:
+      - backend_uploads:/app/src/main/resources/static/uploads
+
+volumes:
+  postgres_data:
+  backend_uploads:

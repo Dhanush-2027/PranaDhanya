@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veterinary Officer Portal | AGRI-DIAGNOSE</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom Style -->
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Header / Topbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark main-navbar sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="#">
+                <i class="fa-solid fa-user-doctor text-warning"></i> VET CONSOLE
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#vetTopbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="vetTopbar">
+                <div class="ms-auto d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                    <button class="btn btn-outline-light btn-sm" onclick="toggleDarkMode()">
+                        <i class="fa-solid fa-circle-half-stroke"></i> Theme
+                    </button>
+                    
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-user fs-4"></i>
+                        <span class="font-weight-semibold" th:text="${user.fullName}">Dr. Rajesh Sharma</span>
+                    </div>
+
+                    <a href="/auth/logout" class="btn btn-danger btn-sm px-3"><i class="fa-solid fa-right-from-bracket"></i></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Wrapper -->
+    <div class="portal-wrapper">
+        <div class="portal-sidebar">
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link active" onclick="switchPane('dashboard', this)">
+                        <i class="fa-solid fa-chart-line"></i> Summary Stats
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('appointments', this)">
+                        <i class="fa-solid fa-calendar-check"></i> Consultations
+                        <span class="badge bg-danger ms-auto" th:text="${#lists.size(appointments)}">0</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('cases', this)">
+                        <i class="fa-solid fa-clipboard-list"></i> Outbreak Cases
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('profile', this)">
+                        <i class="fa-solid fa-user-gear"></i> Profile Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <main class="portal-content">
+
+            <!-- PANE 1: SUMMARY STATS -->
+            <div id="pane-dashboard" class="pane-div">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="custom-card text-center bg-white">
+                            <h2 class="text-success font-weight-bold" th:text="${#lists.size(appointments)}">0</h2>
+                            <p class="text-muted mb-0">Total Assigned Consultations</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="custom-card text-center bg-white">
+                            <h2 class="text-success font-weight-bold" th:text="${#lists.size(plantCases) + #lists.size(animalCases)}">0</h2>
+                            <p class="text-muted mb-0">Total Outbreak Records Reviewed</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="custom-card text-center bg-white">
+                            <h2 class="text-success font-weight-bold">Active</h2>
+                            <p class="text-muted mb-0">NDLM Nodes Status</p>
+                        </div>
+                    </div>
+
+                    <!-- Guidelines -->
+                    <div class="col-12">
+                        <div class="custom-card bg-white">
+                            <h4><i class="fa-solid fa-circle-info text-success me-2"></i> Veterinary Officer Mandate</h4>
+                            <hr>
+                            <p class="text-muted small">As an authorized Veterinary Officer, your evaluations are piped directly to the National Database for Livestock &amp; Crop Diseases (NDLM). Please review all high-severity submissions within 24 hours of notification. Every clinical diagnosis generates automated SMS/Email advisories to the respective farmer.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 2: APPOINTMENTS -->
+            <div id="pane-appointments" class="pane-div d-none">
+                <div class="custom-card">
+                    <h2><i class="fa-solid fa-calendar-check text-success me-2"></i> Assigned Consultation Slots</h2>
+                    <p class="text-muted">Review, approve, reject, or complete scheduled medical slots with farmers.</p>
+                    <hr>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Farmer Name</th>
+                                    <th>Village</th>
+                                    <th>Scheduled Date/Time</th>
+                                    <th>Reported Disease</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="a : ${appointments}">
+                                    <td class="font-weight-semibold" th:text="${a.farmer.fullName}">Ramesh Gowda</td>
+                                    <td th:text="${a.farmer.village}">Mandya Village</td>
+                                    <td th:text="${a.appointmentDate + ' ' + a.appointmentTime}">2026-06-29 10:30</td>
+                                    <td th:text="${a.disease}">Lumpy Skin</td>
+                                    <td>
+                                        <span class="badge" th:classappend="${a.status == 'PENDING' ? 'bg-warning text-dark' : (a.status == 'APPROVED' ? 'bg-info text-white' : (a.status == 'REJECTED' ? 'bg-danger text-white' : 'bg-success text-white'))}" th:text="${a.status}">PENDING</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2" th:if="${a.status == 'PENDING'}">
+                                            <button class="btn btn-sm btn-success py-1" th:onclick="'updateApptStatus(' + ${a.id} + ', \'APPROVED\')'"><i class="fa-solid fa-check"></i> Approve</button>
+                                            <button class="btn btn-sm btn-danger py-1" th:onclick="'updateApptStatus(' + ${a.id} + ', \'REJECTED\')'"><i class="fa-solid fa-times"></i> Reject</button>
+                                        </div>
+                                        <button class="btn btn-sm btn-primary py-1" th:if="${a.status == 'APPROVED'}" th:onclick="'openDiagnosisModal(' + ${a.id} + ')'"><i class="fa-solid fa-stethoscope"></i> Diagnose</button>
+                                        <span class="text-muted small" th:if="${a.status == 'COMPLETED'}">Closed Case</span>
+                                        <span class="text-muted small" th:if="${a.status == 'REJECTED'}">-</span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(appointments)}">
+                                    <td colspan="6" class="text-center text-muted py-3">No consultations assigned.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 3: CASES -->
+            <div id="pane-cases" class="pane-div d-none">
+                <div class="custom-card">
+                    <h2><i class="fa-solid fa-clipboard-list text-success me-2"></i> General Outbreak Records</h2>
+                    <p class="text-muted">Review uploaded plant and animal disease logs across the regional district network.</p>
+                    <hr>
+                    <ul class="nav nav-tabs mb-3" id="casesTab" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" id="plantCases-tab" data-bs-toggle="tab" data-bs-target="#plantPane" type="button">Plant Disease Log</button></li>
+                        <li class="nav-item"><button class="nav-link" id="animalCases-tab" data-bs-toggle="tab" data-bs-target="#animalPane" type="button">Livestock Disease Log</button></li>
+                    </ul>
+                    <div class="tab-content" id="casesTabContent">
+                        <!-- Plant Cases -->
+                        <div class="tab-pane fade show active" id="plantPane">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>Farmer Name</th>
+                                            <th>Village</th>
+                                            <th>AI Classification</th>
+                                            <th>Confidence</th>
+                                            <th>Severity</th>
+                                            <th>Time Uploaded</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="pc : ${plantCases}">
+                                            <td>
+                                                <img th:src="${pc.imageUrl}" alt="Leaf" class="rounded zoomable-img" style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;" th:onclick="'zoomImage(\'' + ${pc.imageUrl} + '\')'">
+                                            </td>
+                                            <td th:text="${pc.farmer.fullName}">Ramesh Gowda</td>
+                                            <td th:text="${pc.farmer.village}">Mandya Village</td>
+                                            <td class="font-weight-semibold" th:text="${pc.diseaseName}">Potato Late Blight</td>
+                                            <td th:text="${pc.confidence + '%'}">89%</td>
+                                            <td>
+                                                <span class="badge bg-danger" th:if="${pc.severityScore > 0.6}">High</span>
+                                                <span class="badge bg-warning text-dark" th:if="${pc.severityScore <= 0.6 && pc.severityScore >= 0.35}">Medium</span>
+                                                <span class="badge bg-success" th:if="${pc.severityScore < 0.35}">Low</span>
+                                            </td>
+                                            <td th:text="${pc.timestamp}">2026-06-28</td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(plantCases)}">
+                                            <td colspan="7" class="text-center text-muted py-3">No plant outbreak records found.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Animal Cases -->
+                        <div class="tab-pane fade" id="animalPane">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>Farmer Name</th>
+                                            <th>Village / Phone</th>
+                                            <th>Animal / Disease</th>
+                                            <th>Confidence</th>
+                                            <th>Severity</th>
+                                            <th>Time Uploaded</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="ac : ${animalCases}">
+                                            <td>
+                                                <img th:src="${ac.imageUrl}" alt="Cattle" class="rounded zoomable-img" style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;" th:onclick="'zoomImage(\'' + ${ac.imageUrl} + '\')'">
+                                            </td>
+                                            <td th:text="${ac.farmer.fullName}">Ramesh Gowda</td>
+                                            <td th:text="${ac.farmer.village + ' (' + ac.farmer.phone + ')'}">Mandya Village</td>
+                                            <td class="font-weight-semibold" th:text="${ac.animalType + ' - ' + ac.diseaseName}">Cow - FMD</td>
+                                            <td th:text="${ac.confidence + '%'}">92.4%</td>
+                                            <td>
+                                                <span class="badge" th:classappend="${ac.severity == 'High' ? 'bg-danger' : (ac.severity == 'Medium' ? 'bg-warning text-dark' : 'bg-success')}" th:text="${ac.severity}">High</span>
+                                            </td>
+                                            <td th:text="${ac.timestamp}">2026-06-28</td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(animalCases)}">
+                                            <td colspan="7" class="text-center text-muted py-3">No livestock outbreak records found.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 4: PROFILE SETTINGS -->
+            <div id="pane-profile" class="pane-div d-none">
+                <div class="custom-card mb-4" style="max-width: 800px;">
+                    <h2><i class="fa-solid fa-user-gear text-success me-2"></i> Vet Officer Profile</h2>
+                    <p class="text-muted">Manage clinical identification details and contact specifications.</p>
+                    <hr>
+                    <form id="profileForm" onsubmit="updateVetProfile(event)">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-semibold">Full Name</label>
+                                <input type="text" id="profName" class="form-control" th:value="${user.fullName}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-semibold">Phone Number</label>
+                                <input type="text" id="profPhone" class="form-control" th:value="${user.phone}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-semibold">Outpost Village</label>
+                                <input type="text" id="profVillage" class="form-control" th:value="${user.village}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-semibold">District</label>
+                                <input type="text" id="profDistrict" class="form-control" th:value="${user.district}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-semibold">State</label>
+                                <input type="text" id="profState" class="form-control" th:value="${user.state}" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-4 px-5">Save Configuration</button>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- DIAGNOSTIC EVALUATION MODAL -->
+    <div class="modal fade" id="diagnosisModal" tabindex="-1" aria-labelledby="diagModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title font-weight-bold" id="diagModalLabel"><i class="fa-solid fa-stethoscope"></i> Clinical Diagnosis Report</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-white">
+                    <form id="diagnosisForm" onsubmit="submitDiagnosisReport(event)">
+                        <input type="hidden" id="diagApptId">
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-semibold">Case Disease / Pathogen Name</label>
+                                <input type="text" id="diagDisease" class="form-control" required placeholder="e.g. Confirmed Lumpy Skin, Bovine Fungal Infection">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-semibold">Prescribed Veterinary Medicines</label>
+                                <input type="text" id="diagMedicines" class="form-control" required placeholder="e.g. Antiseptic Spray, Streptomycin 5g">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold">Clinical Treatment Description</label>
+                            <textarea id="diagTreatment" class="form-control" rows="3" required placeholder="Describe daily cleaning, dosage applications, warm feeds..."></textarea>
+                        </div>
+
+                        <div class="row mb-3 mt-4">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="diagIsolation">
+                                    <label class="form-check-label font-weight-semibold" for="diagIsolation">Quarantine / Isolation Required</label>
+                                </div>
+                                <div class="form-text small text-muted">Isolate cow/goat from the rest of herd.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="diagHospital">
+                                    <label class="form-check-label font-weight-semibold" for="diagHospital">Regional Hospital Visit Required</label>
+                                </div>
+                                <div class="form-text small text-muted">Farmer must carry animal to clinic.</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary px-5">Submit Medical Report</button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ZOOM IMAGE MODAL -->
+    <div class="modal fade" id="zoomModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-transparent border-0 text-center">
+                <img id="zoomedImage" src="" alt="Zoom" class="img-fluid rounded" style="max-height: 80vh; max-width: 100%;">
+                <button type="button" class="btn btn-light btn-sm mt-3 mx-auto" data-bs-dismiss="modal" style="width: 100px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Dark Mode Configuration
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('agri-theme', isDark ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('agri-theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Switch Navigation Panes
+        function switchPane(paneName, linkElement) {
+            document.querySelectorAll('.pane-div').forEach(el => el.classList.add('d-none'));
+            document.getElementById('pane-' + paneName).classList.remove('d-none');
+            
+            document.querySelectorAll('.sidebar-nav-link').forEach(el => el.classList.remove('active'));
+            if (linkElement) {
+                linkElement.classList.add('active');
+            }
+        }
+
+        // Approve or Reject slots
+        function updateApptStatus(id, status) {
+            fetch('/api/appointments/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appointmentId: id.toString(), status: status })
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('Appointment request has been ' + status.toLowerCase() + '.');
+                    location.reload();
+                }
+            });
+        }
+
+        // Open Clinical Diagnosis Report Modal
+        function openDiagnosisModal(apptId) {
+            document.getElementById('diagApptId').value = apptId;
+            var myModal = new bootstrap.Modal(document.getElementById('diagnosisModal'));
+            myModal.show();
+        }
+
+        // Submit Diagnosis Report
+        function submitDiagnosisReport(e) {
+            e.preventDefault();
+            let payload = {
+                appointmentId: document.getElementById('diagApptId').value,
+                diagnosis: document.getElementById('diagDisease').value,
+                medicines: document.getElementById('diagMedicines').value,
+                treatment: document.getElementById('diagTreatment').value,
+                isolation: document.getElementById('diagIsolation').checked,
+                hospital: document.getElementById('diagHospital').checked
+            };
+
+            fetch('/api/appointments/diagnosis', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('Medical Diagnosis Report submitted successfully! Consultation status: COMPLETED.');
+                    location.reload();
+                }
+            });
+        }
+
+        // Zoom Image
+        function zoomImage(url) {
+            document.getElementById('zoomedImage').src = url;
+            var myModal = new bootstrap.Modal(document.getElementById('zoomModal'));
+            myModal.show();
+        }
+
+        // Update Profile
+        function updateVetProfile(e) {
+            e.preventDefault();
+            let payload = {
+                fullName: document.getElementById('profName').value,
+                phone: document.getElementById('profPhone').value,
+                village: document.getElementById('profVillage').value,
+                district: document.getElementById('profDistrict').value,
+                state: document.getElementById('profState').value
+            };
+
+            fetch('/api/profile/update', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('Profile saved successfully.');
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

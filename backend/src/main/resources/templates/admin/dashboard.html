@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrator Portal | AGRI-DIAGNOSE</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Leaflet CSS for Heatmap -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Custom Style -->
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Topbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark main-navbar sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="#">
+                <i class="fa-solid fa-lock text-warning"></i> ADMIN PORTAL
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminTopbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="adminTopbar">
+                <div class="ms-auto d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                    <button class="btn btn-outline-light btn-sm" onclick="toggleDarkMode()">
+                        <i class="fa-solid fa-circle-half-stroke"></i> Theme
+                    </button>
+                    
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-user fs-4"></i>
+                        <span class="font-weight-semibold" th:text="${user.fullName}">Administrator</span>
+                    </div>
+
+                    <a href="/auth/logout" class="btn btn-danger btn-sm px-3"><i class="fa-solid fa-right-from-bracket"></i></a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Wrapper -->
+    <div class="portal-wrapper">
+        <div class="portal-sidebar">
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link active" onclick="switchPane('dashboard', this)">
+                        <i class="fa-solid fa-gauge"></i> System Control
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('users', this)">
+                        <i class="fa-solid fa-users"></i> User Accounts
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('heatmap', this)">
+                        <i class="fa-solid fa-map-location-dot"></i> Outbreak Heatmap
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('alerts', this)">
+                        <i class="fa-solid fa-bullhorn"></i> Global Broadcast
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('logs', this)">
+                        <i class="fa-solid fa-terminal"></i> System Logs
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <main class="portal-content">
+
+            <!-- PANE 1: SYSTEM CONTROL -->
+            <div id="pane-dashboard" class="pane-div">
+                <!-- System Status Widgets -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3 col-6">
+                        <div class="custom-card text-center bg-white">
+                            <span class="text-muted small">Plant Diagnosis Cases</span>
+                            <h2 class="font-weight-bold text-success" th:text="${stats.plantRecordsCount}">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="custom-card text-center bg-white">
+                            <span class="text-muted small">Livestock Cases</span>
+                            <h2 class="font-weight-bold text-success" th:text="${stats.animalRecordsCount}">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="custom-card text-center bg-white">
+                            <span class="text-muted small">Total Users</span>
+                            <h2 class="font-weight-bold text-success" th:text="${#lists.size(allUsers)}">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="custom-card text-center bg-white">
+                            <span class="text-muted small">Total Appointments</span>
+                            <h2 class="font-weight-bold text-success" th:text="${#lists.size(appointments)}">0</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Server health telemetry -->
+                <div class="custom-card bg-white mb-4">
+                    <h3><i class="fa-solid fa-server text-success me-2"></i> Server Health &amp; Telemetry</h3>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-md-4 col-sm-6">
+                            <div class="p-3 border rounded bg-light">
+                                <span class="text-muted d-block small">CPU Utilization</span>
+                                <h5 class="font-weight-bold text-success mb-0" th:text="${cpuUsage}">24%</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="p-3 border rounded bg-light">
+                                <span class="text-muted d-block small">Memory Footprint</span>
+                                <h5 class="font-weight-bold text-success mb-0" th:text="${ramUsage}">1.8 GB / 4.0 GB</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-6">
+                            <div class="p-3 border rounded bg-light">
+                                <span class="text-muted d-block small">SSD Storage Footprint</span>
+                                <h5 class="font-weight-bold text-success mb-0" th:text="${storageUsage}">12.4 GB / 40.0 GB</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-6">
+                            <div class="p-3 border rounded bg-light">
+                                <span class="text-muted d-block small">Database Core Status</span>
+                                <h5 class="font-weight-bold text-success mb-0" th:text="${dbStatus}">Connected (PostgreSQL)</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-6">
+                            <div class="p-3 border rounded bg-light">
+                                <span class="text-muted d-block small">Network Traffic Bandwidth</span>
+                                <h5 class="font-weight-bold text-success mb-0" th:text="${networkTraffic}">128 kb/s</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 2: USER ACCOUNTS -->
+            <div id="pane-users" class="pane-div d-none">
+                <div class="row g-4">
+                    <!-- Manage Users Table -->
+                    <div class="col-lg-8">
+                        <div class="custom-card">
+                            <h3><i class="fa-solid fa-users text-success me-2"></i> User Directory</h3>
+                            <p class="text-muted small">Monitor, block/disable, or reset password hashes for farmers and veterinary officers.</p>
+                            <hr>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="u : ${allUsers}">
+                                            <td class="font-weight-semibold" th:text="${u.fullName}">Ramesh Gowda</td>
+                                            <td th:text="${u.username}">farmer1</td>
+                                            <td th:text="${u.email}">farmer@gmail.com</td>
+                                            <td>
+                                                <span class="badge" th:classappend="${u.role.name() == 'ROLE_ADMIN' ? 'bg-danger' : (u.role.name() == 'ROLE_VET' ? 'bg-success' : 'bg-primary')}" th:text="${u.role.name()}">ROLE_FARMER</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge" th:classappend="${u.active ? 'bg-success' : 'bg-secondary'}" th:text="${u.active ? 'Active' : 'Disabled'}">Active</span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex gap-2">
+                                                    <button class="btn btn-xs btn-outline-warning py-1" th:onclick="'openResetModal(' + ${u.id} + ')'" title="Reset Password"><i class="fa-solid fa-key"></i></button>
+                                                    <button class="btn btn-xs py-1" th:classappend="${u.active ? 'btn-outline-secondary' : 'btn-outline-success'}" th:onclick="'toggleUserStatus(' + ${u.id} + ', ' + ${!u.active} + ')'" th:title="${u.active ? 'Disable User' : 'Enable User'}">
+                                                        <i th:class="${u.active ? 'fa-solid fa-ban' : 'fa-solid fa-check'}"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add User Form -->
+                    <div class="col-lg-4">
+                        <div class="custom-card">
+                            <h3><i class="fa-solid fa-user-plus text-success me-2"></i> Register Profile</h3>
+                            <p class="text-muted small">Register a new Veterinary Officer or Farmer profile directly into the system database.</p>
+                            <hr>
+                            <form action="/auth/register" method="POST">
+                                <div class="mb-3">
+                                    <label class="form-label small">Username</label>
+                                    <input type="text" name="username" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Password</label>
+                                    <input type="password" name="password" class="form-control form-control-sm" required minlength="6">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Email Address</label>
+                                    <input type="email" name="email" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Full Name</label>
+                                    <input type="text" name="fullName" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Assigned Role</label>
+                                    <select name="role" class="form-select form-select-sm" required>
+                                        <option value="FARMER">Farmer</option>
+                                        <option value="VET">Veterinary Officer</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Phone Number</label>
+                                    <input type="text" name="phone" class="form-control form-control-sm" placeholder="+91 xxxxxxxxxx" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Village Location</label>
+                                    <input type="text" name="village" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="row g-2 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label small">District</label>
+                                        <input type="text" name="district" class="form-control form-control-sm" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">State</label>
+                                        <input type="text" name="state" class="form-control form-control-sm" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Create Account</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 3: OUTBREAK HEATMAP -->
+            <div id="pane-heatmap" class="pane-div d-none">
+                <div class="custom-card mb-4">
+                    <h2><i class="fa-solid fa-map-location-dot text-success me-2"></i> Disease outbreak Heatmap &amp; Cluster Surveillance</h2>
+                    <p class="text-muted">Interactive map rendering real-time coordinate logs of diagnosed crop pathogens and livestock illnesses.</p>
+                    <hr>
+                    <div id="adminHeatmap" style="height: 500px; border-radius: var(--radius-md); background: #e0f2f1;"></div>
+                </div>
+            </div>
+
+            <!-- PANE 4: GLOBAL BROADCAST -->
+            <div id="pane-alerts" class="pane-div d-none">
+                <div class="custom-card mb-4" style="max-width: 600px;">
+                    <h2><i class="fa-solid fa-bullhorn text-success me-2"></i> Global Emergency Broadcaster</h2>
+                    <p class="text-muted">Broadcast weather warnings, epidemic warnings, or policy updates to all active farmer terminals immediately.</p>
+                    <hr>
+                    <form id="broadcastForm" onsubmit="submitBroadcastAlert(event)">
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold">Alert Title</label>
+                            <input type="text" id="alertTitle" class="form-control" placeholder="e.g. Critical Rainfall Advisory / Lumpy Skin Warning" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label font-weight-semibold">Message Body</label>
+                            <textarea id="alertMessage" class="form-control" rows="4" placeholder="Detail recommendations, quarantine protocols, or compensation claims..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary px-5">Broadcast Alert</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- PANE 5: SYSTEM LOGS -->
+            <div id="pane-logs" class="pane-div d-none">
+                <div class="custom-card bg-dark text-white p-4" style="font-family: monospace;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="text-success mb-0"><i class="fa-solid fa-terminal me-2"></i> Live Server Event Console</h4>
+                        <span class="badge bg-success">ONLINE</span>
+                    </div>
+                    <hr class="bg-success">
+                    <div style="height: 350px; overflow-y: auto; font-size: 0.85rem;" class="text-success-emphasis">
+                        <p class="mb-1 text-light-emphasis">[2026-06-28 16:23:45] INFO: Initializing Spring Security JWT verification filter...</p>
+                        <p class="mb-1 text-light-emphasis">[2026-06-28 16:23:47] INFO: Hibernate ORM successfully bound PostgreSQL 15 dialect.</p>
+                        <p class="mb-1 text-light-emphasis">[2026-06-28 16:23:50] INFO: Loaded AI prediction model configuration mappings.</p>
+                        <p class="mb-1 text-light-emphasis">[2026-06-28 16:23:55] INFO: FastAPI microservice connection initialized at port 8000.</p>
+                        <p class="mb-1 text-warning">[2026-06-28 16:24:02] WARN: Database connection pool utilization reached 35%.</p>
+                        <p class="mb-1 text-light-emphasis">[2026-06-28 16:24:10] INFO: Broadcast alert successfully pushed to NDLM nodes.</p>
+                        <p class="mb-0 text-success">[2026-06-28 16:25:00] SUCCESS: Scheduled backup of smart_agri_db compiled successfully.</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- RESET PASSWORD MODAL -->
+    <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title font-weight-bold" id="resetModalLabel">Reset Account Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="resetForm" onsubmit="submitResetPassword(event)">
+                        <input type="hidden" id="resetUserId">
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold">New Password</label>
+                            <input type="password" id="resetNewPass" class="form-control" required minlength="6" placeholder="Enter new password">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Reset Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Leaflet JS for Heatmap -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script th:inline="javascript">
+        // Embed data models
+        var plantCases = [[${plantCases}]];
+        var animalCases = [[${animalCases}]];
+
+        // Dark Mode Configuration
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('agri-theme', isDark ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('agri-theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Switch Navigation Panes
+        function switchPane(paneName, linkElement) {
+            document.querySelectorAll('.pane-div').forEach(el => el.classList.add('d-none'));
+            document.getElementById('pane-' + paneName).classList.remove('d-none');
+            
+            document.querySelectorAll('.sidebar-nav-link').forEach(el => el.classList.remove('active'));
+            if (linkElement) {
+                linkElement.classList.add('active');
+            }
+
+            // Invalidate Leaflet map layout when pane is revealed
+            if (paneName === 'heatmap') {
+                setTimeout(function() {
+                    adminMap.invalidateSize();
+                }, 200);
+            }
+        }
+
+        // Toggle User Status Active/Inactive
+        function toggleUserStatus(id, active) {
+            fetch('/api/admin/users/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: id.toString(), active: active })
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('User active state updated successfully.');
+                    location.reload();
+                }
+            });
+        }
+
+        // Open Password Reset Modal
+        function openResetModal(userId) {
+            document.getElementById('resetUserId').value = userId;
+            var myModal = new bootstrap.Modal(document.getElementById('resetModal'));
+            myModal.show();
+        }
+
+        // Submit Reset Password
+        function submitResetPassword(e) {
+            e.preventDefault();
+            let payload = {
+                userId: document.getElementById('resetUserId').value,
+                password: document.getElementById('resetNewPass').value
+            };
+
+            fetch('/api/admin/users/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('User password has been reset successfully.');
+                    location.reload();
+                }
+            });
+        }
+
+        // Submit Emergency Alert broadcast
+        function submitBroadcastAlert(e) {
+            e.preventDefault();
+            let payload = {
+                title: document.getElementById('alertTitle').value,
+                message: document.getElementById('alertMessage').value
+            };
+
+            fetch('/api/admin/alerts/broadcast', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('Emergency alert broadcasted to all active farmer terminals.');
+                    document.getElementById('broadcastForm').reset();
+                }
+            });
+        }
+
+        // Initialize Admin Outbreak Heatmap
+        var adminMap = null;
+        document.addEventListener("DOMContentLoaded", function() {
+            adminMap = L.map('adminHeatmap').setView([20.5937, 78.9629], 5);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(adminMap);
+
+            // Add dynamic coordinates based on cases
+            plantCases.forEach(function(pc) {
+                if (pc.latitude && pc.longitude) {
+                    L.circle([pc.latitude, pc.longitude], {
+                        color: 'green',
+                        fillColor: '#4CAF50',
+                        fillOpacity: 0.5,
+                        radius: 50000
+                    }).addTo(adminMap).bindPopup("<b>Plant Disease: " + pc.diseaseName + "</b><br>Village: " + pc.farmer.village);
+                }
+            });
+
+            animalCases.forEach(function(ac) {
+                if (ac.latitude && ac.longitude) {
+                    let color = ac.severity === 'High' ? 'red' : 'orange';
+                    L.circle([ac.latitude, ac.longitude], {
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.5,
+                        radius: 60000
+                    }).addTo(adminMap).bindPopup("<b>Animal Disease: " + ac.diseaseName + "</b><br>Animal: " + ac.animalType + "<br>Severity: " + ac.severity);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

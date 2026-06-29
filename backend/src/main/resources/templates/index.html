@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>National AI Crop & Livestock Diagnosis Portal</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Custom Style -->
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Top Accent Bar -->
+    <div class="bg-success text-white py-1 px-3 d-flex justify-content-between align-items-center" style="font-size: 0.8rem; background-color: #1b5e20 !important;">
+        <div>
+            <i class="fa-solid fa-flag-usa me-2"></i> Ministry of Agriculture & Farmers Welfare | Government Initiative
+        </div>
+        <div class="d-flex gap-3">
+            <span><i class="fa-solid fa-phone me-1"></i> Toll-Free: 1800-180-1551</span>
+            <span class="d-none d-md-inline"><i class="fa-solid fa-envelope me-1"></i> support-agri@gov.in</span>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark main-navbar sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fa-solid fa-seedling text-warning"></i>
+                <span class="d-none d-sm-inline">AGRI-DIAGNOSE</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                    <li class="nav-item"><a class="nav-link active" href="#"><i class="fa-solid fa-house me-1"></i> Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#ndlm">NDLM Integration</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                </ul>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-light btn-sm px-3" data-bs-toggle="modal" data-bs-target="#loginModal" onclick="setLoginRole('FARMER')">
+                        <i class="fa-solid fa-user me-1"></i> Farmer
+                    </button>
+                    <button class="btn btn-outline-light btn-sm px-3" data-bs-toggle="modal" data-bs-target="#loginModal" onclick="setLoginRole('VET')">
+                        <i class="fa-solid fa-user-doctor me-1"></i> Vet Officer
+                    </button>
+                    <button class="btn btn-warning btn-sm px-3 text-dark font-weight-bold" data-bs-toggle="modal" data-bs-target="#loginModal" onclick="setLoginRole('ADMIN')">
+                        <i class="fa-solid fa-lock me-1"></i> Admin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Query Parameter Toast Notifications for Feedback -->
+    <div class="container mt-3">
+        <div th:if="${param.loginerror}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Login Failed:</strong> Invalid credentials. Please try again.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${param.registersuccess}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Registration Successful!</strong> You can now log in to the portal.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${param.registererror}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Registration Failed:</strong> <span th:text="${param.registererror}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${param.loggedout}" class="alert alert-info alert-dismissible fade show" role="alert">
+            You have logged out successfully.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${param.forgot_success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            An OTP code has been sent to your registered email/phone number.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="showOtpModal()"></button>
+        </div>
+        <div th:if="${param.otp_success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            OTP Verified! A password reset link has been dispatched to your email.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <header class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 text-center text-lg-start mb-5 mb-lg-0">
+                    <h1>AI-Powered Crop &amp; Livestock Disease Portal</h1>
+                    <p>Empowering farmers across the nation using state-of-the-art Deep Learning and Machine Learning diagnostics. Detect plant infections, identify livestock illnesses, and forecast agricultural yield instantly.</p>
+                    <div class="d-flex gap-3 justify-content-center justify-content-lg-start">
+                        <button class="btn btn-accent px-4 py-2 font-weight-bold" data-bs-toggle="modal" data-bs-target="#registerModal">
+                            <i class="fa-solid fa-user-plus me-2"></i> Get Started
+                        </button>
+                        <a href="#about" class="btn btn-outline-light px-4 py-2">
+                            Learn More <i class="fa-solid fa-arrow-down ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <div class="glass-card p-4 mx-auto" style="max-width: 500px;">
+                        <img src="https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=600&q=80" alt="Agriculture Illustration" class="img-fluid rounded shadow-lg mb-3">
+                        <h5 class="text-white"><i class="fa-solid fa-chart-line text-warning me-2"></i> National Agri-Diagnostics Platform</h5>
+                        <p class="text-white-50 small mb-0">Providing real-time telemetry and disease surveillance clusters integrated with the NDLM network.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Section -->
+    <section class="py-5 bg-white">
+        <div class="container">
+            <div class="row g-4 text-center">
+                <div class="col-md-3 col-6">
+                    <h2 class="text-success font-weight-bold display-5">98.4%</h2>
+                    <p class="text-muted mb-0">Diagnosis Accuracy</p>
+                </div>
+                <div class="col-md-3 col-6">
+                    <h2 class="text-success font-weight-bold display-5">4.2M+</h2>
+                    <p class="text-muted mb-0">Farmers Enrolled</p>
+                </div>
+                <div class="col-md-3 col-6">
+                    <h2 class="text-success font-weight-bold display-5">15,000+</h2>
+                    <p class="text-muted mb-0">Vets On-boarded</p>
+                </div>
+                <div class="col-md-3 col-6">
+                    <h2 class="text-success font-weight-bold display-5">1.2 Sec</h2>
+                    <p class="text-muted mb-0">Prediction Latency</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-4 mb-lg-0">
+                    <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=600&q=80" alt="Farm Tech" class="img-fluid rounded-lg shadow-medium">
+                </div>
+                <div class="col-lg-6">
+                    <span class="text-success font-weight-bold text-uppercase" style="font-size: 0.9rem;">Empowering Agriculture</span>
+                    <h2 class="mb-3 mt-1">Driving Digital Agri-Innovation</h2>
+                    <p class="text-muted">The AI-Powered Smart Agriculture &amp; Livestock Disease Diagnosis Portal is a comprehensive government-backed digital ecosystem. Built on secure Java microservices and optimized Python deep-learning engines, it allows real-time diagnostics directly from the field.</p>
+                    <p class="text-muted">Whether dealing with crop fungi or cattle viral pathogens, the platform gives instant step-by-step guidance on pesticide applications, organic treatments, and direct connectivity to local government veterinary stations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-5 bg-white">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>Portal Capabilities</h2>
+                <p class="text-muted col-lg-6 mx-auto">Explore the deep features offered to the farming community and veterinary officers.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="custom-card h-100">
+                        <div class="text-success mb-3" style="font-size: 2.2rem;"><i class="fa-solid fa-leaf"></i></div>
+                        <h4>Plant Pathology</h4>
+                        <p class="text-muted">Upload crop foliage images to detect diseases like late blight or rust. Receive severity calculations and prescription advice instantly.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="custom-card h-100">
+                        <div class="text-success mb-3" style="font-size: 2.2rem;"><i class="fa-solid fa-cow"></i></div>
+                        <h4>Livestock Health</h4>
+                        <p class="text-muted">Run image diagnostics for animal pathogens (FMD, Lumpy Skin, Mastitis). Recieve quarantine isolation advice and nearby vet office referral.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="custom-card h-100">
+                        <div class="text-success mb-3" style="font-size: 2.2rem;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <h4>Soil Analytics</h4>
+                        <p class="text-muted">Input soil N-P-K parameters and moisture variables. The ML system will suggest suitable crops and appropriate fertilizer quantities.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="custom-card h-100">
+                        <div class="text-success mb-3" style="font-size: 2.2rem;"><i class="fa-solid fa-chart-area"></i></div>
+                        <h4>Yield Regressor</h4>
+                        <p class="text-muted">Predict yield output per hectare depending on meteorological statistics, soil composition, and fertilizer tonnage.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="custom-card h-100">
+                        <div class="text-success mb-3" style="font-size: 2.2rem;"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                        <h4>Market Predictions</h4>
+                        <p class="text-muted">Leverage time-series commodity price prediction models. Make optimal decisions on when and where to list crops for maximum profit.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="custom-card h-100">
+                        <div class="text-success mb-3" style="font-size: 2.2rem;"><i class="fa-solid fa-calendar-check"></i></div>
+                        <h4>Tele-Medicine</h4>
+                        <p class="text-muted">Directly book slot consultations with certified veterinary officers. Track diagnostic summaries, review reports, and export clinical PDFs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- NDLM Section (Heatmap & Clusters) -->
+    <section id="ndlm" class="py-5 bg-light">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-5 mb-4 mb-lg-0">
+                    <span class="text-success font-weight-bold text-uppercase" style="font-size: 0.9rem;">National Database for Livestock &amp; Crop Diseases</span>
+                    <h2 class="mb-3 mt-1">NDLM Real-Time Outbreak Heatmap</h2>
+                    <p class="text-muted">Every diagnostic submission records anonymized geo-coordinates. The NDLM engine utilizes this data to generate regional cluster heatmaps, providing early warnings to containment officers when severe diseases are recorded.</p>
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="stat-pill stat-pill-danger">CRITICAL</span>
+                            <span class="small font-weight-semibold">Lumpy Skin outbreak cluster detected (North District)</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="stat-pill stat-pill-warning">MONITORING</span>
+                            <span class="small font-weight-semibold">Potato Late Blight spreading due to humidity shifts</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="custom-card p-2 bg-white">
+                        <div id="ndlmMap" class="heatmap-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-5 bg-white">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>Frequently Asked Questions</h2>
+                <p class="text-muted col-lg-6 mx-auto">Get answers to the most common questions about the AI diagnostic platform.</p>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="accordion accordion-flush" id="faqAccordion">
+                        <div class="accordion-item border-bottom py-2">
+                            <h2 class="accordion-header" id="faq-h1">
+                                <button class="accordion-button collapsed font-weight-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-c1">
+                                    How accurate are the AI diagnostic predictions?
+                                </button>
+                            </h2>
+                            <div id="faq-c1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-muted">
+                                    Our ResNet9 plant and animal models have been validated against datasets with over 98% accuracy. For cases where confidence scores drop below 70%, the portal automatically flags the submission and prompts the farmer to schedule a consultation with a live veterinary officer.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item border-bottom py-2">
+                            <h2 class="accordion-header" id="faq-h2">
+                                <button class="accordion-button collapsed font-weight-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-c2">
+                                    Is there a fee to use this diagnosis portal?
+                                </button>
+                            </h2>
+                            <div id="faq-c2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-muted">
+                                    No. The portal is a fully subsidized National e-Governance project. Crop analysis, price forecasting, and veterinary telemedicine consultation scheduling are provided completely free of charge to all registered farmers.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item border-bottom py-2">
+                            <h2 class="accordion-header" id="faq-h3">
+                                <button class="accordion-button collapsed font-weight-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq-c3">
+                                    What is the NDLM integration?
+                                </button>
+                            </h2>
+                            <div id="faq-c3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body text-muted">
+                                    The National Database for Livestock &amp; Crop Diseases (NDLM) integrates agricultural health telemetry across states. It aggregates crop and livestock disease notifications, maps outbreak clusters, and notifies district collectors of active outbreaks to initiate containment routines.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2>Support &amp; Contact</h2>
+                <p class="text-muted">Reach out for integration support or regional outbreak escalations.</p>
+            </div>
+            <div class="row g-4 justify-content-center">
+                <div class="col-md-5">
+                    <div class="custom-card bg-white h-100">
+                        <h4 class="mb-4"><i class="fa-solid fa-headset text-success me-2"></i> Support Desks</h4>
+                        <p class="mb-3"><strong>National Tele-Support:</strong> 1800-180-1551</p>
+                        <p class="mb-3"><strong>Ministry Helpline:</strong> 011-23388911</p>
+                        <p class="mb-3"><strong>Email Support:</strong> helpdesk-agridiagnose@gov.in</p>
+                        <p class="mb-0"><strong>Address:</strong> Krishi Bhawan, Dr. Rajendra Prasad Road, New Delhi - 110001</p>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="custom-card bg-white h-100">
+                        <h4 class="mb-4">Submit Query</h4>
+                        <form onsubmit="event.preventDefault(); alert('Query submitted successfully!'); this.reset();">
+                            <div class="mb-3">
+                                <input type="text" class="form-control" placeholder="Full Name" required>
+                            </div>
+                            <div class="mb-3">
+                                <input type="email" class="form-control" placeholder="Email Address" required>
+                            </div>
+                            <div class="mb-3">
+                                <textarea class="form-control" rows="3" placeholder="Describe your question or issue..." required></textarea>
+                            </div>
+                            <button class="btn btn-primary w-100">Submit</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <h5><i class="fa-solid fa-seedling text-warning me-2"></i> AGRI-DIAGNOSE</h5>
+                    <p class="small text-white-50">An advanced digital e-governance service providing secure, artificial intelligence driven diagnosis systems for sustainable farm management and epidemiology monitoring.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Important Links</h5>
+                    <ul class="list-unstyled d-flex flex-column gap-2 small">
+                        <li><a href="https://pmkisan.gov.in" target="_blank"><i class="fa-solid fa-angle-right me-1"></i> PM-KISAN Portal</a></li>
+                        <li><a href="https://enam.gov.in" target="_blank"><i class="fa-solid fa-angle-right me-1"></i> e-NAM Market System</a></li>
+                        <li><a href="https://www.nddb.coop" target="_blank"><i class="fa-solid fa-angle-right me-1"></i> National Dairy Development Board</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Regional Offices</h5>
+                    <p class="small text-white-50 mb-1">North: New Delhi, India</p>
+                    <p class="small text-white-50 mb-1">South: Bengaluru, Karnataka</p>
+                    <p class="small text-white-50">West: Pune, Maharashtra</p>
+                </div>
+            </div>
+            <hr class="my-4 border-light opacity-25">
+            <div class="text-center small text-white-50">
+                &copy; 2026 Ministry of Agriculture &amp; Farmers Welfare. All rights reserved. Powered by Advanced Agentic Systems.
+            </div>
+        </div>
+    </footer>
+
+    <!-- LOGIN MODAL -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-card border-light text-dark">
+                <div class="modal-header border-0 bg-success text-white">
+                    <h5 class="modal-title font-weight-bold" id="loginModalLabel">
+                        <i class="fa-solid fa-shield-halved me-2"></i> <span id="loginRoleTitle">Farmer</span> Login
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-white">
+                    <!-- Standard action submission to AuthController -->
+                    <form action="/auth/login" method="POST">
+                        <input type="hidden" name="role" id="loginRoleInput" value="FARMER">
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                                <input type="text" name="username" class="form-control" placeholder="Enter username (e.g. farmer1)" required>
+                            </div>
+                            <div class="form-text small text-muted">Demo options: <strong>farmer1</strong>, <strong>vet1</strong>, <strong>admin</strong></div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label font-weight-semibold">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                                <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+                            </div>
+                            <div class="form-text small text-muted">Demo passwords: <strong>farmer123</strong>, <strong>vet123</strong>, <strong>admin123</strong></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <button type="submit" class="btn btn-primary px-4">Sign In</button>
+                            <a href="#" class="small text-success text-decoration-none" data-bs-toggle="modal" data-bs-target="#forgotModal" data-bs-dismiss="modal">Forgot Password?</a>
+                        </div>
+                        <div class="text-center border-top pt-3 mt-3">
+                            <span class="small text-muted">Don't have an account? </span>
+                            <a href="#" class="small text-success font-weight-bold" data-bs-toggle="modal" data-bs-target="#registerModal" data-bs-dismiss="modal">Register Here</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REGISTER MODAL -->
+    <div class="modal fade" id="registerModal" tabindex="-1" aria-labelledby="registerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content glass-card border-light text-dark">
+                <div class="modal-header border-0 bg-success text-white">
+                    <h5 class="modal-title font-weight-bold" id="registerModalLabel">
+                        <i class="fa-solid fa-user-plus me-2"></i> Register New Portal Profile
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-white">
+                    <form action="/auth/register" method="POST">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Username</label>
+                                <input type="text" name="username" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Password</label>
+                                <input type="password" name="password" class="form-control" required minlength="6">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" name="email" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" name="fullName" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Role</label>
+                                <select name="role" class="form-select" required>
+                                    <option value="FARMER">Farmer</option>
+                                    <option value="VET">Veterinary Officer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="text" name="phone" class="form-control" placeholder="+91 xxxxxxxxxx" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Village</label>
+                                <input type="text" name="village" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">District</label>
+                                <input type="text" name="district" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">State</label>
+                                <input type="text" name="state" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="mt-4 d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary px-5">Submit Registration</button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORGOT PASSWORD MODAL -->
+    <div class="modal fade" id="forgotModal" tabindex="-1" aria-labelledby="forgotModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-white">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title font-weight-bold" id="forgotModalLabel">Forgot Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form action="/auth/forgot" method="POST">
+                        <p class="text-muted small">Enter your registered email address to receive a 6-digit One Time Verification Code (OTP).</p>
+                        <div class="mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-control" required placeholder="Enter registered email">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Send OTP</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP VERIFICATION MODAL -->
+    <div class="modal fade" id="otpModal" tabindex="-1" aria-labelledby="otpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-white">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title font-weight-bold" id="otpModalLabel">Enter Verification Code</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form action="/auth/verify-otp" method="POST">
+                        <p class="text-muted small">We have sent a 6-digit verification code to your email. Enter it below to proceed.</p>
+                        <div class="mb-3">
+                            <label class="form-label">One Time Password (OTP)</label>
+                            <input type="text" name="otp" class="form-control text-center font-weight-bold fs-4" placeholder="------" required maxlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Verify Code</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Leaflet JS for Map -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Set dynamic role details inside Login Modal
+        function setLoginRole(role) {
+            document.getElementById('loginRoleInput').value = role;
+            let roleTitle = "Farmer";
+            if (role === "VET") {
+                roleTitle = "Veterinary Officer";
+            } else if (role === "ADMIN") {
+                roleTitle = "Administrator";
+            }
+            document.getElementById('loginRoleTitle').innerText = roleTitle;
+        }
+
+        // Show OTP Modal triggered by mock query params
+        function showOtpModal() {
+            var myModal = new bootstrap.Modal(document.getElementById('otpModal'));
+            myModal.show();
+        }
+
+        // Initialize Leaflet Map for NDLM Outbreaks
+        document.addEventListener("DOMContentLoaded", function() {
+            // center around coordinates (e.g. central India)
+            var map = L.map('ndlmMap').setView([20.5937, 78.9629], 5);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add mock outbreak clusters
+            var clusters = [
+                {lat: 12.9716, lon: 77.5946, label: "Lumpy Skin Disease (Cow) - Bengaluru Cluster (HIGH)", severity: "high"},
+                {lat: 28.7041, lon: 77.1025, label: "Potato Late Blight - Delhi Outpost (MEDIUM)", severity: "medium"},
+                {lat: 19.0760, lon: 72.8777, label: "Foot & Mouth Disease - Mumbai Suburbs (HIGH)", severity: "high"},
+                {lat: 22.5726, lon: 88.3639, label: "Rice Blast fungus - Kolkata Delta (LOW)", severity: "low"}
+            ];
+
+            clusters.forEach(function(c) {
+                var color = c.severity === 'high' ? 'red' : (c.severity === 'medium' ? 'orange' : 'green');
+                var circle = L.circle([c.lat, c.lon], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.4,
+                    radius: 70000 // meters
+                }).addTo(map);
+                circle.bindPopup("<b>" + c.label + "</b>");
+            });
+
+            // Trigger OTP modal if URL param is set (due to mock flow redirect)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('forgot_success') === 'true') {
+                showOtpModal();
+            }
+        });
+    </script>
+</body>
+</html>

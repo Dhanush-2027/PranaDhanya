@@ -1,0 +1,42 @@
+# Environments and dependencies
+.venv/
+venv/
+env/
+node_modules/
+.env
+.env.local
+.env.*.local
+
+# Large datasets (downloaded programmatically via download_datasets.py)
+datasets/
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# Maven/Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/
+
+# General build outputs
+build/
+dist/
+out/

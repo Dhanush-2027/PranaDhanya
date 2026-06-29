@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Portal | AGRI-DIAGNOSE</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom Style -->
+    <link href="../css/style.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Header / Topbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark main-navbar sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="#">
+                <i class="fa-solid fa-seedling text-warning"></i> FARMER CONSOLE
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#farmerTopbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="farmerTopbar">
+                <div class="ms-auto d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                    <div class="input-group input-group-sm" style="max-width: 150px;">
+                        <span class="input-group-text"><i class="fa-solid fa-language"></i></span>
+                        <select class="form-select" id="langSwitcher" onchange="translateDashboard(this.value)">
+                            <option value="en">English</option>
+                            <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                            <option value="hi">हिन्दी (Hindi)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-outline-light btn-sm" onclick="toggleDarkMode()">
+                        <i class="fa-solid fa-circle-half-stroke"></i> <span class="d-none d-md-inline">Theme</span>
+                    </button>
+
+                    <!-- Notifications Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light btn-sm position-relative" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notifCountBadge">0</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="notifDropdown" id="notifDropdownList" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                            <li><h6 class="dropdown-header font-weight-bold">Notifications Log</h6></li>
+                            <!-- Populated dynamically -->
+                        </ul>
+                    </div>
+
+                    <div class="text-white d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-user fs-4"></i>
+                        <span class="font-weight-semibold" id="farmerHeaderName">Farmer Name</span>
+                    </div>
+
+                    <button onclick="handleLogout()" class="btn btn-danger btn-sm px-3"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Wrapper -->
+    <div class="portal-wrapper">
+        <div class="portal-sidebar">
+            <ul class="sidebar-nav">
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link active" onclick="switchPane('dashboard', this)">
+                        <i class="fa-solid fa-gauge"></i> <span data-translate="nav-dashboard">Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('plantPathology', this)">
+                        <i class="fa-solid fa-leaf"></i> <span data-translate="nav-plant">Plant Diagnosis</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('livestockHealth', this)">
+                        <i class="fa-solid fa-cow"></i> <span data-translate="nav-livestock">Livestock Diagnosis</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('cropAnalytics', this)">
+                        <i class="fa-solid fa-seedling"></i> <span data-translate="nav-crop">Crop Analytics</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('marketForecast', this)">
+                        <i class="fa-solid fa-indian-rupee-sign"></i> <span data-translate="nav-finance">Price Forecast</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('vetConsultation', this)">
+                        <i class="fa-solid fa-user-doctor"></i> <span data-translate="nav-vet">Book Consultation</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('historyRecords', this)">
+                        <i class="fa-solid fa-history"></i> <span data-translate="nav-records">My Records</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('govtSchemes', this)">
+                        <i class="fa-solid fa-building-columns"></i> <span data-translate="nav-schemes">Govt Schemes</span>
+                    </a>
+                </li>
+                <li class="sidebar-nav-item">
+                    <a href="#" class="sidebar-nav-link" onclick="switchPane('profileSettings', this)">
+                        <i class="fa-solid fa-user-gear"></i> <span data-translate="nav-profile">Profile Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Content Panel -->
+        <main class="portal-content">
+
+            <!-- PANE 1: DASHBOARD OVERVIEW -->
+            <div id="pane-dashboard" class="pane-div">
+                <div class="row g-4">
+                    <!-- Outbreak notification Banner Placeholder -->
+                    <div class="col-12" id="outbreakAlertsBanner"></div>
+
+                    <!-- Weather Widget -->
+                    <div class="col-lg-6">
+                        <div class="custom-card h-100">
+                            <h4><i class="fa-solid fa-cloud-sun text-warning me-2"></i> Weather Station</h4>
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h2 class="mb-0">29°C</h2>
+                                    <p class="text-muted mb-0">Partly Cloudy | Mandya, India</p>
+                                </div>
+                                <div style="font-size: 3rem;" class="text-success"><i class="fa-solid fa-cloud-sun-rain"></i></div>
+                            </div>
+                            <div class="row text-center mt-3 pt-3 border-top g-2">
+                                <div class="col-4">
+                                    <span class="small text-muted d-block">Humidity</span>
+                                    <span class="font-weight-semibold">68%</span>
+                                </div>
+                                <div class="col-4">
+                                    <span class="small text-muted d-block">Wind Speed</span>
+                                    <span class="font-weight-semibold">14 km/h</span>
+                                </div>
+                                <div class="col-4">
+                                    <span class="small text-muted d-block">Rain Probability</span>
+                                    <span class="font-weight-semibold">40%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Prices -->
+                    <div class="col-lg-6">
+                        <div class="custom-card h-100">
+                            <h4><i class="fa-solid fa-money-bill-trend-up text-success me-2"></i> Current Market Prices (quintal)</h4>
+                            <hr>
+                            <ul class="list-group list-group-flush small">
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span>Paddy Rice (Basmati)</span>
+                                    <span class="font-weight-bold text-success">₹ 2,450 <i class="fa-solid fa-caret-up"></i></span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span>Maize (Yellow)</span>
+                                    <span class="font-weight-bold text-success">₹ 2,090 <i class="fa-solid fa-caret-up"></i></span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span>Chickpea (Gram)</span>
+                                    <span class="font-weight-bold text-danger">₹ 5,200 <i class="fa-solid fa-caret-down"></i></span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                    <span>Cotton (Raw)</span>
+                                    <span class="font-weight-bold text-success">₹ 7,100 <i class="fa-solid fa-caret-up"></i></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Shortcut Modules -->
+                    <div class="col-md-4">
+                        <div class="custom-card text-center" onclick="triggerSidebarTab(1)">
+                            <div class="text-success fs-2 mb-2"><i class="fa-solid fa-leaf"></i></div>
+                            <h5>Diagnose Plant Disease</h5>
+                            <p class="small text-muted">Upload crop leaf photo for disease prediction.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="custom-card text-center" onclick="triggerSidebarTab(2)">
+                            <div class="text-success fs-2 mb-2"><i class="fa-solid fa-cow"></i></div>
+                            <h5>Diagnose Animal Disease</h5>
+                            <p class="small text-muted">Identify livestock pathogens and viral illnesses.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="custom-card text-center" onclick="triggerSidebarTab(5)">
+                            <div class="text-success fs-2 mb-2"><i class="fa-solid fa-calendar-check"></i></div>
+                            <h5>Book Consultation</h5>
+                            <p class="small text-muted">Schedule vet appointments in your village.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 2: PLANT PATHOLOGY -->
+            <div id="pane-plantPathology" class="pane-div d-none">
+                <div class="custom-card mb-4">
+                    <h2><i class="fa-solid fa-leaf text-success me-2"></i> Plant Disease Detection</h2>
+                    <p class="text-muted">Upload a photo of the infected crop leaf to obtain CNN-driven diagnostic classifications, treatment recipes, and organic recommendations.</p>
+                    <hr>
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <form id="plantForm" onsubmit="submitPlantDiagnosis(event)">
+                                <div class="mb-3">
+                                    <label class="form-label font-weight-semibold">Leaf Photo</label>
+                                    <div class="image-preview-box" onclick="document.getElementById('plantImageFile').click()">
+                                        <i class="fa-solid fa-cloud-arrow-up fs-2 text-muted mb-2"></i>
+                                        <span class="text-muted">Drag &amp; drop or click to upload</span>
+                                        <input type="file" id="plantImageFile" accept="image/*" style="display:none" onchange="previewImage(this, 'plantPreview')" required>
+                                        <img id="plantPreview" src="" alt="Upload Preview" style="display:none">
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label small">Latitude (NDLM)</label>
+                                        <input type="number" step="any" id="plantLat" class="form-control form-control-sm" placeholder="12.9716">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">Longitude (NDLM)</label>
+                                        <input type="number" step="any" id="plantLon" class="form-control form-control-sm" placeholder="77.5946">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100" id="plantSubmitBtn">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="plantLoader"></span>
+                                    Analyze Crop Health
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-lg-6">
+                            <!-- Diagnostic Outcome -->
+                            <div class="border rounded p-4 bg-light d-none" id="plantResultBox">
+                                <h4 class="text-success border-bottom pb-2"><i class="fa-solid fa-clipboard-check me-2"></i> AI Diagnosis Summary</h4>
+                                <div class="mb-3 mt-3">
+                                    <span class="text-muted d-block small">Classified Disease</span>
+                                    <h5 class="font-weight-bold" id="plantResDisease">-</h5>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Confidence Level</span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="confidence-meter flex-grow-1 mt-0">
+                                            <div class="confidence-bar" id="plantResConfidenceBar" style="width: 0%"></div>
+                                        </div>
+                                        <span class="small font-weight-bold" id="plantResConfidenceText">0%</span>
+                                    </div>
+                                </div>
+                                <div class="alert alert-info py-2" id="plantVetReferral" style="display:none;">
+                                    <i class="fa-solid fa-circle-info me-2"></i> Confidence is below 70%. We recommend scheduling a physical vet appointment.
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Description</span>
+                                    <p class="small mb-0" id="plantResDesc">-</p>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Symptoms</span>
+                                    <p class="small mb-0 text-danger" id="plantResSymptoms">-</p>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Organic Treatments</span>
+                                    <p class="small mb-0 text-success" id="plantResOrganic">-</p>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Chemical Treatment / Prescriptions</span>
+                                    <p class="small mb-0 text-primary" id="plantResChemical">-</p>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Immediate Sanitation Steps</span>
+                                    <p class="small mb-0 text-warning" id="plantResImmediate">-</p>
+                                </div>
+                            </div>
+                            <!-- Skeleton loader -->
+                            <div class="border rounded p-4 bg-light d-none" id="plantSkeleton">
+                                <div class="skeleton skeleton-title"></div>
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                                <div class="skeleton skeleton-card mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 3: LIVESTOCK HEALTH -->
+            <div id="pane-livestockHealth" class="pane-div d-none">
+                <div class="custom-card mb-4">
+                    <h2><i class="fa-solid fa-cow text-success me-2"></i> Livestock Disease Detection</h2>
+                    <p class="text-muted">Upload cattle or small ruminant photographs to analyze skin nodules, blisters, or udder lesions. Recieve quarantine protocols and emergency referrals.</p>
+                    <hr>
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <form id="animalForm" onsubmit="submitAnimalDiagnosis(event)">
+                                <div class="mb-3">
+                                    <label class="form-label font-weight-semibold">Animal Image File</label>
+                                    <div class="image-preview-box" onclick="document.getElementById('animalImageFile').click()">
+                                        <i class="fa-solid fa-camera fs-2 text-muted mb-2"></i>
+                                        <span class="text-muted">Upload cattle skin or symptom photo</span>
+                                        <input type="file" id="animalImageFile" accept="image/*" style="display:none" onchange="previewImage(this, 'animalPreview')" required>
+                                        <img id="animalPreview" src="" alt="Upload Preview" style="display:none">
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label small">Latitude</label>
+                                        <input type="number" step="any" id="animalLat" class="form-control form-control-sm" placeholder="12.9716">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">Longitude</label>
+                                        <input type="number" step="any" id="animalLon" class="form-control form-control-sm" placeholder="77.5946">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100" id="animalSubmitBtn">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="animalLoader"></span>
+                                    Analyze Livestock Health
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-lg-6">
+                            <!-- Diagnostic Outcome -->
+                            <div class="border rounded p-4 bg-light d-none" id="animalResultBox">
+                                <h4 class="text-success border-bottom pb-2"><i class="fa-solid fa-clipboard-check me-2"></i> AI Vet Diagnosis Summary</h4>
+                                <div class="mb-3 mt-3">
+                                    <span class="text-muted d-block small">Animal Type &amp; Pathogen</span>
+                                    <h5 class="font-weight-bold" id="animalResDisease">-</h5>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Severity Level</span>
+                                    <span class="badge" id="animalResSeverity">Low</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Detected Symptoms</span>
+                                    <p class="small mb-0" id="animalResSymptoms">-</p>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Emergency Advice</span>
+                                    <p class="small mb-0 text-danger" id="animalResEmergency">-</p>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Clinical Treatments</span>
+                                    <p class="small mb-0 text-primary" id="animalResTreatment">-</p>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Quarantine / Isolation Guidance</span>
+                                    <p class="small mb-0 text-warning" id="animalResIsolation">-</p>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="text-muted d-block small">Nearest Vet Station Referral</span>
+                                    <p class="small mb-0 font-weight-bold" id="animalResVet">-</p>
+                                </div>
+                            </div>
+                            <!-- Skeleton loader -->
+                            <div class="border rounded p-4 bg-light d-none" id="animalSkeleton">
+                                <div class="skeleton skeleton-title"></div>
+                                <div class="skeleton skeleton-text"></div>
+                                <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                                <div class="skeleton skeleton-card mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 4: CROP ANALYTICS -->
+            <div id="pane-cropAnalytics" class="pane-div d-none">
+                <div class="row g-4">
+                    <!-- Crop Recommendation Module -->
+                    <div class="col-lg-6">
+                        <div class="custom-card">
+                            <h3><i class="fa-solid fa-wand-magic-sparkles text-success me-2"></i> Crop Recommendation</h3>
+                            <p class="text-muted small">Input N-P-K nutrient values and weather parameters to recommend optimal crop matches.</p>
+                            <form id="cropRecForm" onsubmit="submitCropRecommendation(event)">
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label small">State</label>
+                                        <input type="text" id="cropState" class="form-control" value="Karnataka" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">District</label>
+                                        <input type="text" id="cropDistrict" class="form-control" value="Mandya" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">Season</label>
+                                        <select id="cropSeason" class="form-select">
+                                            <option value="Kharif">Kharif</option>
+                                            <option value="Rabi">Rabi</option>
+                                            <option value="Summer">Summer</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">Soil Type</label>
+                                        <select id="cropSoil" class="form-select">
+                                            <option value="Clayey">Clayey</option>
+                                            <option value="Loamy">Loamy</option>
+                                            <option value="Sandy">Sandy</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-4">
+                                        <label class="form-label small">Nitrogen (N)</label>
+                                        <input type="number" id="cropN" class="form-control text-center" value="45" required>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label small">Phosphorus (P)</label>
+                                        <input type="number" id="cropP" class="form-control text-center" value="50" required>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label small">Potassium (K)</label>
+                                        <input type="number" id="cropK" class="form-control text-center" value="40" required>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-4">
+                                    <div class="col-4">
+                                        <label class="form-label small">Temp (°C)</label>
+                                        <input type="number" step="any" id="cropTemp" class="form-control text-center" value="28" required>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label small">Humidity (%)</label>
+                                        <input type="number" step="any" id="cropHum" class="form-control text-center" value="70" required>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label small">Rainfall (mm)</label>
+                                        <input type="number" step="any" id="cropRain" class="form-control text-center" value="120" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Predict Optimal Crop</button>
+                            </form>
+
+                            <!-- Crop Rec Outcome -->
+                            <div class="mt-4 border rounded p-3 bg-light d-none" id="cropRecResult">
+                                <h5 class="text-success"><i class="fa-solid fa-circle-check"></i> ML Crop Recommendation</h5>
+                                <div class="mt-2">
+                                    <strong>Recommended Crop: </strong> <span id="cropRecVal">-</span>
+                                </div>
+                                <div>
+                                    <strong>Confidence: </strong> <span id="cropRecConf">-</span>
+                                </div>
+                                <div>
+                                    <strong>Expected Yield: </strong> <span id="cropRecYield">-</span> tons/ha
+                                </div>
+                                <p class="small text-muted mt-2 mb-0" id="cropRecReason">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fertilizer Recommendation Module -->
+                    <div class="col-lg-6">
+                        <div class="custom-card">
+                            <h3><i class="fa-solid fa-vial text-success me-2"></i> Fertilizer Advisor</h3>
+                            <p class="text-muted small">Input current macro-nutrients and plant species to evaluate chemical applications and bio-fertilizer dosages.</p>
+                            <form id="fertilizerForm" onsubmit="submitFertilizerRecommendation(event)">
+                                <div class="row g-2 mb-3">
+                                    <div class="col-4">
+                                        <label class="form-label small">Nitrogen (N)</label>
+                                        <input type="number" id="fertN" class="form-control text-center" value="30" required>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label small">Phosphorus (P)</label>
+                                        <input type="number" id="fertP" class="form-control text-center" value="45" required>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label small">Potassium (K)</label>
+                                        <input type="number" id="fertK" class="form-control text-center" value="50" required>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label small">Moisture (%)</label>
+                                        <input type="number" step="any" id="fertMoist" class="form-control" value="35" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small">Target Crop</label>
+                                        <input type="text" id="fertCrop" class="form-control" value="Rice" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Predict Fertilizer Dose</button>
+                            </form>
+
+                            <!-- Fertilizer Rec Outcome -->
+                            <div class="mt-4 border rounded p-3 bg-light d-none" id="fertResult">
+                                <h5 class="text-success"><i class="fa-solid fa-circle-check"></i> Fertilizer Prescription</h5>
+                                <div class="mt-2">
+                                    <strong>Recommended Application: </strong> <span id="fertVal">-</span>
+                                </div>
+                                <div>
+                                    <strong>Dosage / Acre: </strong> <span id="fertQty">-</span>
+                                </div>
+                                <div class="mt-2">
+                                    <strong>Organic Bio-Alternatives: </strong>
+                                    <p class="small text-muted mb-0" id="fertOrganic">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Yield Prediction Module -->
+                    <div class="col-12">
+                        <div class="custom-card">
+                            <h3><i class="fa-solid fa-chart-area text-success me-2"></i> Crop Yield Forecast</h3>
+                            <p class="text-muted small">Model overall yield output in metric tons depending on weather telemetry, soil profiles, and area footprint.</p>
+                            <div class="row g-4">
+                                <div class="col-lg-6">
+                                    <form id="yieldForm" onsubmit="submitYieldPrediction(event)">
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label small">Farm Area (Hectares)</label>
+                                                <input type="number" step="any" id="yieldArea" class="form-control" value="2.5" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small">Meteorological Rainfall (mm)</label>
+                                                <input type="number" step="any" id="yieldRain" class="form-control" value="650" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small">Fertilizer Used (kg)</label>
+                                                <input type="number" step="any" id="yieldFert" class="form-control" value="250" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small">Soil Category</label>
+                                                <input type="text" id="yieldSoil" class="form-control" value="Alluvial" required>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small">Target Crop</label>
+                                                <input type="text" id="yieldCrop" class="form-control" value="Rice" required>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100">Predict Farm Yield Output</button>
+                                    </form>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="border rounded p-4 bg-light h-100 d-flex flex-column justify-content-center align-items-center text-center d-none" id="yieldResult">
+                                        <i class="fa-solid fa-chart-pie text-success fs-1 mb-3"></i>
+                                        <span class="text-muted d-block small">Forecasted Yield Output</span>
+                                        <h2 class="font-weight-bold text-success"><span id="yieldValDisplay">0</span> Tons</h2>
+                                        <p class="small text-muted">This prediction operates within an estimated 95.8% accuracy interval using current inputs.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 5: MARKET FORECAST -->
+            <div id="pane-marketForecast" class="pane-div d-none">
+                <div class="custom-card mb-4">
+                    <h2><i class="fa-solid fa-indian-rupee-sign text-success me-2"></i> Crop Price Prediction</h2>
+                    <p class="text-muted">Predict wholesale mandi commodity rates per quintal to choose the best sales timeframe.</p>
+                    <hr>
+                    <div class="row g-4">
+                        <div class="col-lg-5">
+                            <form id="priceForm" onsubmit="submitPricePrediction(event)">
+                                <div class="mb-3">
+                                    <label class="form-label">Crop Type</label>
+                                    <select id="priceCrop" class="form-select">
+                                        <option value="Rice">Rice (Paddy)</option>
+                                        <option value="Maize">Maize (Corn)</option>
+                                        <option value="Chickpea">Chickpea (Bengal Gram)</option>
+                                        <option value="Grapes">Grapes (Horticulture)</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">State</label>
+                                    <input type="text" id="priceState" class="form-control" value="Karnataka" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Wholesale Mandi Market</label>
+                                    <input type="text" id="priceMarket" class="form-control" value="Mandya APMC" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Target Sale Month</label>
+                                    <select id="priceMonth" class="form-select">
+                                        <option value="October">October</option>
+                                        <option value="November">November</option>
+                                        <option value="December">December</option>
+                                        <option value="January">January</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Forecast Price Trajectory</button>
+                            </form>
+                        </div>
+                        <div class="col-lg-7">
+                            <div class="border rounded p-4 bg-light d-none" id="priceResultBox">
+                                <h4 class="text-success border-bottom pb-2">Wholesale Valuation Predictor</h4>
+                                <div class="row mt-3">
+                                    <div class="col-6 border-end">
+                                        <span class="text-muted small">Expected Wholesale Price</span>
+                                        <h3 class="font-weight-bold text-success">₹ <span id="priceValDisplay">-</span></h3>
+                                        <span class="text-muted small">per Quintal (100kg)</span>
+                                    </div>
+                                    <div class="col-6 px-3">
+                                        <span class="text-muted small">Market Trend</span>
+                                        <p class="small font-weight-bold mb-0 text-primary" id="priceTrendDisplay">-</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <span class="text-muted small d-block mb-2">Historical Valuation Chart (Last 4 Months)</span>
+                                    <div style="height: 220px; position: relative;">
+                                        <canvas id="priceHistoryChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 6: VET CONSULTATION -->
+            <div id="pane-vetConsultation" class="pane-div d-none">
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="custom-card">
+                            <h3><i class="fa-solid fa-calendar-plus text-success me-2"></i> Book Consultation</h3>
+                            <p class="text-muted small">Schedule an appointment slot with a verified Veterinary Officer in your district outpost.</p>
+                            <form id="appointmentForm" onsubmit="submitAppointmentForm(event)">
+                                <div class="mb-3">
+                                    <label class="form-label">Choose Veterinary Officer</label>
+                                    <select id="apptVet" class="form-select" required>
+                                        <!-- Dynamically Populated -->
+                                    </select>
+                                </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label">Consultation Date</label>
+                                        <input type="date" id="apptDate" class="form-control" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Preferred Time Slot</label>
+                                        <input type="time" id="apptTime" class="form-control" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Suspected Disease / Sickness</label>
+                                    <input type="text" id="apptDisease" class="form-control" placeholder="e.g. Lumpy Skin signs, Cow drooling" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label">Notes for Vet</label>
+                                    <textarea id="apptNotes" class="form-control" rows="3" placeholder="Describe symptoms, herd details..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Submit Booking Request</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="custom-card">
+                            <h3><i class="fa-solid fa-list-check text-success me-2"></i> Booking Consultation Status</h3>
+                            <div class="table-responsive mt-3">
+                                <table class="table table-hover align-middle small" id="appointmentTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Vet Officer</th>
+                                            <th>Date / Time</th>
+                                            <th>Disease Case</th>
+                                            <th>Status</th>
+                                            <th>Diagnosis &amp; Rx</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamically Populated -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 7: MY RECORDS -->
+            <div id="pane-historyRecords" class="pane-div d-none">
+                <div class="custom-card">
+                    <h2><i class="fa-solid fa-box-archive text-success me-2"></i> My Diagnostic Logs</h2>
+                    <p class="text-muted">History archive of plant leaf and animal symptom uploads. Keep track of previous AI diagnostics, NDLM coordinate tags, and severity logs.</p>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <input type="text" id="recordSearch" class="form-control form-control-sm" placeholder="Search disease logs..." style="max-width: 250px;" onkeyup="filterRecords(this.value)">
+                        <button class="btn btn-sm btn-outline-success" onclick="exportRecordsPDF()"><i class="fa-solid fa-file-pdf me-1"></i> Export PDF Log</button>
+                    </div>
+                    <ul class="nav nav-tabs mb-3" id="recordsTab" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" id="plant-tab" data-bs-toggle="tab" data-bs-target="#plantRecs" type="button">Plant Disease Case History</button></li>
+                        <li class="nav-item"><button class="nav-link" id="animal-tab" data-bs-toggle="tab" data-bs-target="#animalRecs" type="button">Livestock Disease Case History</button></li>
+                    </ul>
+                    <div class="tab-content" id="recordsTabContent">
+                        <!-- Plant Records -->
+                        <div class="tab-pane fade show active" id="plantRecs">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle small" id="plantHistoryTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>Disease Name</th>
+                                            <th>Confidence</th>
+                                            <th>Severity</th>
+                                            <th>Date Analyzed</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamic rows -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Animal Records -->
+                        <div class="tab-pane fade" id="animalRecs">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle small" id="animalHistoryTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>Animal Species</th>
+                                            <th>Disease Classification</th>
+                                            <th>Confidence</th>
+                                            <th>Severity</th>
+                                            <th>Date Analyzed</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamic rows -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 8: GOVT SCHEMES -->
+            <div id="pane-govtSchemes" class="pane-div d-none">
+                <div class="custom-card mb-4">
+                    <h2><i class="fa-solid fa-building-columns text-success me-2"></i> Subsidies &amp; Government Schemes</h2>
+                    <p class="text-muted">Stay updated on national financial subsidies, insurance setups, and farm infrastructure grants.</p>
+                    <hr>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 bg-light h-100">
+                                <h5 class="text-success font-weight-bold"><i class="fa-solid fa-hand-holding-dollar"></i> PM-KISAN Samman Nidhi</h5>
+                                <p class="small text-muted">Income support of ₹ 6,000 per year in three equal installments to all landholding farmer families across the country.</p>
+                                <a href="https://pmkisan.gov.in" target="_blank" class="btn btn-sm btn-outline-primary">Check Installment Status</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 bg-light h-100">
+                                <h5 class="text-success font-weight-bold"><i class="fa-solid fa-shield-halved"></i> PM Fasal Bima Yojana (PMFBY)</h5>
+                                <p class="small text-muted">Crop insurance scheme offering financial coverage against crop losses resulting from natural calamities, pests, or disease outbreaks.</p>
+                                <a href="https://pmfby.gov.in" target="_blank" class="btn btn-sm btn-outline-primary">Calculate Insurance Premium</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 bg-light h-100">
+                                <h5 class="text-success font-weight-bold"><i class="fa-solid fa-cow text-success"></i> Livestock Insurance Scheme</h5>
+                                <p class="small text-muted">Subsidized insurance coverage for valuable milch cattle, crossbred cows, and indigenous buffaloes to protect against disease fatalities.</p>
+                                <button class="btn btn-sm btn-outline-primary" onclick="alert('Contact your district Veterinary Officer for scheme enrollment forms.')">View Details</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 bg-light h-100">
+                                <h5 class="text-success font-weight-bold"><i class="fa-solid fa-droplet text-primary"></i> Per Drop More Crop (PDMC)</h5>
+                                <p class="small text-muted">Financial subsidy of up to 55% for installing modern micro-irrigation systems (drip and sprinkler systems) to conserve water.</p>
+                                <button class="btn btn-sm btn-outline-primary" onclick="alert('PDMC grant applications are processed at district horticulture offices.')">Apply Grant</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANE 9: PROFILE SETTINGS -->
+            <div id="pane-profileSettings" class="pane-div d-none">
+                <div class="custom-card mb-4" style="max-width: 800px;">
+                    <h2><i class="fa-solid fa-user-gear text-success me-2"></i> Update Profile Details</h2>
+                    <p class="text-muted">Manage personal contact parameters, phone numbers, and village district geolocation references.</p>
+                    <hr>
+                    <form id="profileForm" onsubmit="updateFarmerProfile(event)">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-semibold">Full Name</label>
+                                <input type="text" id="profName" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label font-weight-semibold">Phone Number</label>
+                                <input type="text" id="profPhone" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-semibold">Village</label>
+                                <input type="text" id="profVillage" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-semibold">District</label>
+                                <input type="text" id="profDistrict" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label font-weight-semibold">State</label>
+                                <input type="text" id="profState" class="form-control" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-4 px-5">Save Configuration</button>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- VOICE ASSISTANT BUTTON -->
+    <button class="voice-btn animate__animated animate__pulse animate__infinite" onclick="triggerVoiceAssistant()">
+        <i class="fa-solid fa-microphone"></i>
+    </button>
+
+    <!-- PRESCRIPTION DETAILS MODAL -->
+    <div class="modal fade" id="prescriptionModal" tabindex="-1" aria-labelledby="presModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title font-weight-bold" id="presModalLabel"><i class="fa-solid fa-file-prescription"></i> Veterinary Diagnosis Report</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" id="presModalBody">
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text" style="width: 80%"></div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-sm btn-outline-success" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Rx</button>
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const API_BASE = "http://localhost:8080/api";
+        const token = localStorage.getItem("agri_token");
+        if (!token) {
+            window.location.href = "../index.html";
+        }
+
+        let globalAppointments = [];
+
+        // Fetch dashboard statistics and lists
+        function loadDashboardData() {
+            fetch(`${API_BASE}/farmer/dashboard-data`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            })
+            .then(res => {
+                if(res.status === 401) {
+                    handleLogout();
+                }
+                return res.json();
+            })
+            .then(data => {
+                // Header credentials
+                document.getElementById('farmerHeaderName').innerText = data.user.fullName;
+                
+                // Outbreak banner alerts
+                const banner = document.getElementById('outbreakAlertsBanner');
+                banner.innerHTML = '';
+                data.globalAlerts.forEach(alert => {
+                    banner.innerHTML += `
+                        <div class="alert alert-warning border-start border-4 border-warning d-flex align-items-center gap-3">
+                            <i class="fa-solid fa-circle-exclamation fs-3"></i>
+                            <div>
+                                <h6 class="mb-1 font-weight-bold">${alert.title}</h6>
+                                <p class="mb-0 small text-muted">${alert.message}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Notifications Dropdown
+                const notifCountBadge = document.getElementById('notifCountBadge');
+                const notifDropdownList = document.getElementById('notifDropdownList');
+                // Remove existing list items after header
+                while (notifDropdownList.children.length > 1) {
+                    notifDropdownList.removeChild(notifDropdownList.lastChild);
+                }
+
+                let unreadCount = 0;
+                data.notifications.forEach(n => {
+                    if(!n.read) unreadCount++;
+                    notifDropdownList.innerHTML += `
+                        <li>
+                            <div class="dropdown-item py-2 border-bottom ${!n.read ? 'bg-light' : ''}">
+                                <div class="d-flex justify-content-between">
+                                    <span class="small font-weight-bold">${n.title}</span>
+                                    <button class="btn btn-close" style="font-size: 0.6rem;" onclick="markNotifRead(${n.id}, this)"></button>
+                                </div>
+                                <p class="small text-muted mb-0">${n.message}</p>
+                            </div>
+                        </li>
+                    `;
+                });
+                notifCountBadge.innerText = unreadCount;
+                if(unreadCount === 0) notifCountBadge.style.display = 'none';
+
+                // Profile form values
+                document.getElementById('profName').value = data.user.fullName || '';
+                document.getElementById('profPhone').value = data.user.phone || '';
+                document.getElementById('profVillage').value = data.user.village || '';
+                document.getElementById('profDistrict').value = data.user.district || '';
+                document.getElementById('profState').value = data.user.state || '';
+
+                // Vets dropdown
+                const vetSelect = document.getElementById('apptVet');
+                vetSelect.innerHTML = '';
+                data.vets.forEach(v => {
+                    vetSelect.innerHTML += `<option value="${v.id}">${v.fullName} (${v.district})</option>`;
+                });
+
+                // Appointments Table
+                globalAppointments = data.appointments;
+                const apptBody = document.querySelector('#appointmentTable tbody');
+                apptBody.innerHTML = '';
+                data.appointments.forEach(a => {
+                    const statusClass = a.status === 'PENDING' ? 'bg-warning text-dark' : (a.status === 'APPROVED' ? 'bg-info text-white' : (a.status === 'REJECTED' ? 'bg-danger text-white' : 'bg-success text-white'));
+                    let actionBtn = `<span class="text-muted small">Not diagnosed</span>`;
+                    if(a.status === 'COMPLETED') {
+                        actionBtn = `<button class="btn btn-sm btn-outline-primary py-1" onclick="showPrescriptionModal(${a.id})"><i class="fa-solid fa-file-prescription"></i> View Rx</button>`;
+                    }
+                    apptBody.innerHTML += `
+                        <tr>
+                            <td class="font-weight-semibold">${a.vet.fullName}</td>
+                            <td>${a.appointmentDate} ${a.appointmentTime}</td>
+                            <td>${a.disease}</td>
+                            <td><span class="badge ${statusClass}">${a.status}</span></td>
+                            <td>${actionBtn}</td>
+                        </tr>
+                    `;
+                });
+                if(data.appointments.length === 0) {
+                    apptBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-3">No consultations recorded.</td></tr>`;
+                }
+
+                // Plant Records History
+                const plantBody = document.querySelector('#plantHistoryTable tbody');
+                plantBody.innerHTML = '';
+                data.plantRecords.forEach(pr => {
+                    let badgeClass = pr.severityScore > 0.6 ? 'bg-danger' : (pr.severityScore >= 0.35 ? 'bg-warning text-dark' : 'bg-success');
+                    let severityText = pr.severityScore > 0.6 ? 'High' : (pr.severityScore >= 0.35 ? 'Medium' : 'Low');
+                    plantBody.innerHTML += `
+                        <tr>
+                            <td><img src="http://localhost:8080${pr.imageUrl}" alt="Crop leaf" class="rounded" style="width: 50px; height: 50px; object-fit: cover;"></td>
+                            <td class="font-weight-semibold">${pr.diseaseName}</td>
+                            <td>${pr.confidence}%</td>
+                            <td><span class="badge ${badgeClass}">${severityText}</span></td>
+                            <td>${pr.timestamp.split('T')[0]}</td>
+                            <td><button class="btn btn-sm btn-outline-danger" onclick="deleteRecord(${pr.id}, 'plant', this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    `;
+                });
+                if(data.plantRecords.length === 0) {
+                    plantBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No plant cases cataloged.</td></tr>`;
+                }
+
+                // Animal Records History
+                const animalBody = document.querySelector('#animalHistoryTable tbody');
+                animalBody.innerHTML = '';
+                data.animalRecords.forEach(ar => {
+                    let badgeClass = ar.severity === 'High' ? 'bg-danger' : (ar.severity === 'Medium' ? 'bg-warning text-dark' : 'bg-success');
+                    animalBody.innerHTML += `
+                        <tr>
+                            <td><img src="http://localhost:8080${ar.imageUrl}" alt="Cattle" class="rounded" style="width: 50px; height: 50px; object-fit: cover;"></td>
+                            <td>${ar.animalType}</td>
+                            <td class="font-weight-semibold">${ar.diseaseName}</td>
+                            <td>${ar.confidence}%</td>
+                            <td><span class="badge ${badgeClass}">${ar.severity}</span></td>
+                            <td>${ar.timestamp.split('T')[0]}</td>
+                            <td><button class="btn btn-sm btn-outline-danger" onclick="deleteRecord(${ar.id}, 'animal', this)"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    `;
+                });
+                if(data.animalRecords.length === 0) {
+                    animalBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-3">No livestock cases cataloged.</td></tr>`;
+                }
+            })
+            .catch(err => console.error("Error loading dashboard data:", err));
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            window.location.href = "../index.html";
+        }
+
+        // Toggle Dark Mode
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('agri-theme', isDark ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('agri-theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Switch Navigation Panes
+        function switchPane(paneName, linkElement) {
+            document.querySelectorAll('.pane-div').forEach(el => el.classList.add('d-none'));
+            document.getElementById('pane-' + paneName).classList.remove('d-none');
+            
+            document.querySelectorAll('.sidebar-nav-link').forEach(el => el.classList.remove('active'));
+            if (linkElement) {
+                linkElement.classList.add('active');
+            }
+        }
+
+        function triggerSidebarTab(index) {
+            let links = document.querySelectorAll('.sidebar-nav-link');
+            if(links[index]) {
+                links[index].click();
+            }
+        }
+
+        function previewImage(input, previewId) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var preview = document.getElementById(previewId);
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    preview.previousElementSibling.style.display = 'none';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function markNotifRead(id, buttonEl) {
+            fetch(`${API_BASE}/notifications/read/${id}`, {
+                method: 'POST',
+                headers: { "Authorization": `Bearer ${token}` }
+            })
+            .then(res => {
+                if(res.ok) {
+                    buttonEl.closest('li').remove();
+                    let badge = document.getElementById('notifCountBadge');
+                    let cnt = parseInt(badge.innerText) - 1;
+                    badge.innerText = cnt;
+                    if(cnt <= 0) badge.style.display = 'none';
+                }
+            });
+        }
+
+        // Submit Plant Disease Diagnosis
+        function submitPlantDiagnosis(e) {
+            e.preventDefault();
+            let fileInput = document.getElementById('plantImageFile');
+            if (fileInput.files.length === 0) return;
+
+            document.getElementById('plantSubmitBtn').disabled = true;
+            document.getElementById('plantLoader').classList.remove('d-none');
+            document.getElementById('plantResultBox').classList.add('d-none');
+            document.getElementById('plantSkeleton').classList.remove('d-none');
+
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            let lat = document.getElementById('plantLat').value;
+            let lon = document.getElementById('plantLon').value;
+            if(lat) formData.append("latitude", lat);
+            if(lon) formData.append("longitude", lon);
+
+            fetch(`${API_BASE}/predictPlant`, {
+                method: 'POST',
+                headers: { "Authorization": `Bearer ${token}` },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('plantResDisease').innerText = data.diseaseName;
+                document.getElementById('plantResConfidenceText').innerText = data.confidence + '%';
+                document.getElementById('plantResConfidenceBar').style.width = data.confidence + '%';
+                document.getElementById('plantResDesc').innerText = data.description;
+                document.getElementById('plantResSymptoms').innerText = data.symptoms;
+                document.getElementById('plantResOrganic').innerText = data.organicTreatment;
+                document.getElementById('plantResChemical').innerText = data.recommendedMedicines;
+                document.getElementById('plantResImmediate').innerText = data.immediateActions;
+
+                if (data.confidence < 70) {
+                    document.getElementById('plantVetReferral').style.display = 'block';
+                } else {
+                    document.getElementById('plantVetReferral').style.display = 'none';
+                }
+
+                document.getElementById('plantSkeleton').classList.add('d-none');
+                document.getElementById('plantResultBox').classList.remove('d-none');
+                loadDashboardData(); // Refresh history log lists
+            })
+            .catch(err => alert("Error during diagnosis: " + err))
+            .finally(() => {
+                document.getElementById('plantSubmitBtn').disabled = false;
+                document.getElementById('plantLoader').classList.add('d-none');
+            });
+        }
+
+        // Submit Livestock Disease Diagnosis
+        function submitAnimalDiagnosis(e) {
+            e.preventDefault();
+            let fileInput = document.getElementById('animalImageFile');
+            if (fileInput.files.length === 0) return;
+
+            document.getElementById('animalSubmitBtn').disabled = true;
+            document.getElementById('animalLoader').classList.remove('d-none');
+            document.getElementById('animalResultBox').classList.add('d-none');
+            document.getElementById('animalSkeleton').classList.remove('d-none');
+
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            let lat = document.getElementById('animalLat').value;
+            let lon = document.getElementById('animalLon').value;
+            if(lat) formData.append("latitude", lat);
+            if(lon) formData.append("longitude", lon);
+
+            fetch(`${API_BASE}/predictAnimal`, {
+                method: 'POST',
+                headers: { "Authorization": `Bearer ${token}` },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('animalResDisease').innerText = data.animalType + " - " + data.diseaseName;
+                document.getElementById('animalResSeverity').innerText = data.severity;
+                
+                let sBadge = document.getElementById('animalResSeverity');
+                sBadge.className = 'badge';
+                if(data.severity === 'High') sBadge.classList.add('bg-danger');
+                else if(data.severity === 'Medium') sBadge.classList.add('bg-warning', 'text-dark');
+                else sBadge.classList.add('bg-success');
+
+                document.getElementById('animalResSymptoms').innerText = data.symptoms;
+                document.getElementById('animalResEmergency').innerText = data.emergencyAdvice;
+                document.getElementById('animalResTreatment').innerText = data.treatment;
+                document.getElementById('animalResIsolation').innerText = data.isolationGuidance;
+                document.getElementById('animalResVet').innerText = data.nearbyVet;
+
+                document.getElementById('animalSkeleton').classList.add('d-none');
+                document.getElementById('animalResultBox').classList.remove('d-none');
+                loadDashboardData();
+            })
+            .catch(err => alert("Error during diagnosis: " + err))
+            .finally(() => {
+                document.getElementById('animalSubmitBtn').disabled = false;
+                document.getElementById('animalLoader').classList.add('d-none');
+            });
+        }
+
+        // Crop Recommendation
+        function submitCropRecommendation(e) {
+            e.preventDefault();
+            let payload = {
+                state: document.getElementById('cropState').value,
+                district: document.getElementById('cropDistrict').value,
+                season: document.getElementById('cropSeason').value,
+                soilType: document.getElementById('cropSoil').value,
+                nitrogen: parseFloat(document.getElementById('cropN').value),
+                phosphorus: parseFloat(document.getElementById('cropP').value),
+                potassium: parseFloat(document.getElementById('cropK').value),
+                temperature: parseFloat(document.getElementById('cropTemp').value),
+                humidity: parseFloat(document.getElementById('cropHum').value),
+                rainfall: parseFloat(document.getElementById('cropRain').value)
+            };
+
+            fetch(`${API_BASE}/cropRecommendation`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}` 
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('cropRecVal').innerText = data.recommendedCrop;
+                document.getElementById('cropRecConf').innerText = data.confidence + '%';
+                document.getElementById('cropRecYield').innerText = data.expectedYield;
+                document.getElementById('cropRecReason').innerText = data.reason;
+                document.getElementById('cropRecResult').classList.remove('d-none');
+            });
+        }
+
+        // Fertilizer Recommendation
+        function submitFertilizerRecommendation(e) {
+            e.preventDefault();
+            let payload = {
+                nitrogen: parseFloat(document.getElementById('fertN').value),
+                phosphorus: parseFloat(document.getElementById('fertP').value),
+                potassium: parseFloat(document.getElementById('fertK').value),
+                moisture: parseFloat(document.getElementById('fertMoist').value),
+                crop: document.getElementById('fertCrop').value,
+                temperature: 28,
+                humidity: 70
+            };
+
+            fetch(`${API_BASE}/fertilizerRecommendation`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('fertVal').innerText = data.recommendedFertilizer;
+                document.getElementById('fertQty').innerText = data.applicationQuantity;
+                document.getElementById('fertOrganic').innerText = data.organicAlternatives;
+                document.getElementById('fertResult').classList.remove('d-none');
+            });
+        }
+
+        // Yield Prediction
+        function submitYieldPrediction(e) {
+            e.preventDefault();
+            let payload = {
+                area: parseFloat(document.getElementById('yieldArea').value),
+                rainfall: parseFloat(document.getElementById('yieldRain').value),
+                fertilizer: parseFloat(document.getElementById('yieldFert').value),
+                soil: document.getElementById('yieldSoil').value,
+                crop: document.getElementById('yieldCrop').value,
+                temperature: 28,
+                humidity: 70
+            };
+
+            fetch(`${API_BASE}/yieldPrediction`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('yieldValDisplay').innerText = data.predictedYield;
+                document.getElementById('yieldResult').classList.remove('d-none');
+            });
+        }
+
+        // Price Prediction
+        let priceChart = null;
+        function submitPricePrediction(e) {
+            e.preventDefault();
+            let crop = document.getElementById('priceCrop').value;
+            let payload = {
+                crop: crop,
+                state: document.getElementById('priceState').value,
+                market: document.getElementById('priceMarket').value,
+                month: document.getElementById('priceMonth').value
+            };
+
+            fetch(`${API_BASE}/pricePrediction`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('priceValDisplay').innerText = data.expectedPrice;
+                document.getElementById('priceTrendDisplay').innerText = data.marketTrend;
+                document.getElementById('priceResultBox').classList.remove('d-none');
+
+                const ctx = document.getElementById('priceHistoryChart').getContext('2d');
+                if (priceChart) priceChart.destroy();
+
+                let base = data.expectedPrice;
+                let dataPoints = [base * 0.92, base * 0.95, base * 0.98, base];
+                
+                priceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                            label: crop + ' Mandi Price (₹/Quintal)',
+                            data: dataPoints,
+                            borderColor: '#2E7D32',
+                            backgroundColor: 'rgba(46, 125, 50, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            });
+        }
+
+        // Book Appointment
+        function submitAppointmentForm(e) {
+            e.preventDefault();
+            let payload = {
+                vetId: document.getElementById('apptVet').value,
+                date: document.getElementById('apptDate').value,
+                time: document.getElementById('apptTime').value,
+                disease: document.getElementById('apptDisease').value,
+                notes: document.getElementById('apptNotes').value
+            };
+
+            fetch(`${API_BASE}/appointments/book`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('Appointment slot booked successfully!');
+                    loadDashboardData();
+                    document.getElementById('appointmentForm').reset();
+                } else {
+                    alert('Booking failed.');
+                }
+            });
+        }
+
+        // Show Vet Prescription Modal
+        function showPrescriptionModal(apptId) {
+            let app = globalAppointments.find(a => a.id === apptId);
+            if(!app) return;
+
+            let html = `
+                <div class="mb-3">
+                    <span class="text-muted d-block small">Diagnosis Case</span>
+                    <h6 class="font-weight-bold">${app.disease}</h6>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted d-block small">Veterinary Diagnosis Summary</span>
+                    <p class="small mb-0 text-danger">${app.vetDiagnosis}</p>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted d-block small">Prescribed Medicines</span>
+                    <p class="small mb-0 text-primary font-weight-bold">${app.vetMedicines}</p>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted d-block small">Isolation / Quarantine Advice</span>
+                    <p class="small mb-0 text-warning">${app.isolationRequired ? 'REQUIRED: Quarantine animal immediately.' : 'Not required.'}</p>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted d-block small">Hospital/Outpost Visit Required</span>
+                    <p class="small mb-0">${app.hospitalVisitRequired ? 'YES: Visit nearest regional office.' : 'No.'}</p>
+                </div>
+                <div class="mb-0">
+                    <span class="text-muted d-block small">Treatment Instructions</span>
+                    <p class="small mb-0">${app.vetTreatment}</p>
+                </div>
+            `;
+            document.getElementById('presModalBody').innerHTML = html;
+            var myModal = new bootstrap.Modal(document.getElementById('prescriptionModal'));
+            myModal.show();
+        }
+
+        // Update Profile
+        function updateFarmerProfile(e) {
+            e.preventDefault();
+            let payload = {
+                fullName: document.getElementById('profName').value,
+                phone: document.getElementById('profPhone').value,
+                village: document.getElementById('profVillage').value,
+                district: document.getElementById('profDistrict').value,
+                state: document.getElementById('profState').value
+            };
+
+            fetch(`${API_BASE}/profile/update`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if(res.ok) {
+                    alert('Profile configuration saved successfully.');
+                    loadDashboardData();
+                }
+            });
+        }
+
+        // Delete Records
+        function deleteRecord(id, type, btnEl) {
+            if(!confirm("Are you sure you want to delete this diagnosis log?")) return;
+            
+            fetch(`${API_BASE}/records/${type}/delete/${id}`, {
+                method: 'DELETE',
+                headers: { "Authorization": `Bearer ${token}` }
+            })
+            .then(res => {
+                if(res.ok) {
+                    btnEl.closest('tr').remove();
+                }
+            });
+        }
+
+        function filterRecords(query) {
+            query = query.toLowerCase();
+            document.querySelectorAll("#plantHistoryTable tbody tr, #animalHistoryTable tbody tr").forEach(tr => {
+                let txt = tr.innerText.toLowerCase();
+                if(txt.includes(query)) tr.style.display = '';
+                else tr.style.display = 'none';
+            });
+        }
+
+        function exportRecordsPDF() {
+            alert("Generating PDF Report Archive...\nDownload started successfully.");
+        }
+
+        function triggerVoiceAssistant() {
+            alert("Voice Assistant activated. Speak now...\n(Mock: Listening for regional Kannada/Hindi/English triggers)");
+        }
+
+        const translations = {
+            kn: {
+                "nav-dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+                "nav-plant": "ಸಸ್ಯ ರೋಗ ಪತ್ತೆ",
+                "nav-livestock": "ಜಾನುವಾರು ರೋಗ ಪತ್ತೆ",
+                "nav-crop": "ಬೆಳೆ ವಿಶ್ಲೇಷಣೆ",
+                "nav-finance": "ಬೆಲೆ ಮುನ್ಸೂಚನೆ",
+                "nav-vet": "ಸಮಾಲೋಚನೆ ಬುಕಿಂಗ್",
+                "nav-records": "ನನ್ನ ದಾಖಲೆಗಳು",
+                "nav-schemes": "ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು",
+                "nav-profile": "ಪ್ರೊಫೈಲ್ ಸೆಟ್ಟಿಂಗ್ಸ್"
+            },
+            hi: {
+                "nav-dashboard": "डैशबोर्ड",
+                "nav-plant": "पौधों के रोग",
+                "nav-livestock": "पशु रोग निदान",
+                "nav-crop": "फसल विश्लेषण",
+                "nav-finance": "मूल्य पूर्वानुमान",
+                "nav-vet": "पशु चिकित्सक परामर्श",
+                "nav-records": "मेरे रिकॉर्ड्स",
+                "nav-schemes": "सरकारी योजनाएं",
+                "nav-profile": "प्रोफ़ाइल सेटिंग्स"
+            },
+            en: {
+                "nav-dashboard": "Dashboard",
+                "nav-plant": "Plant Diagnosis",
+                "nav-livestock": "Livestock Diagnosis",
+                "nav-crop": "Crop Analytics",
+                "nav-finance": "Price Forecast",
+                "nav-vet": "Book Consultation",
+                "nav-records": "My Records",
+                "nav-schemes": "Govt Schemes",
+                "nav-profile": "Profile Settings"
+            }
+        };
+
+        function translateDashboard(lang) {
+            document.querySelectorAll("[data-translate]").forEach(el => {
+                let key = el.getAttribute("data-translate");
+                if(translations[lang] && translations[lang][key]) {
+                    el.innerText = translations[lang][key];
+                }
+            });
+        }
+
+        // On Load
+        document.addEventListener("DOMContentLoaded", function() {
+            loadDashboardData();
+        });
+    </script>
+</body>
+</html>

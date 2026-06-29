@@ -1,0 +1,391 @@
+{
+	"info": {
+		"_postman_id": "890a9b8c-df12-4c34-bcde-5678abcdef01",
+		"name": "Smart Agriculture & Livestock Portal API",
+		"description": "API collection for testing authentication, AI prediction engines, appointment scheduling, and admin workflows.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Sign In (JWT Generation)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"farmer1\",\n    \"password\": \"farmer123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/signin",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sign Up (Register User)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"newfarmer\",\n    \"password\": \"password123\",\n    \"email\": \"newfarmer@gmail.com\",\n    \"fullName\": \"Rajesh Gowda\",\n    \"phone\": \"+91 9111111111\",\n    \"village\": \"Maddur\",\n    \"district\": \"Mandya\",\n    \"state\": \"Karnataka\",\n    \"role\": \"FARMER\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/signup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"signup"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "AI Diagnostics",
+			"item": [
+				{
+					"name": "Predict Plant Disease (Multipart)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "latitude",
+									"value": "12.9716",
+									"type": "text"
+								},
+								{
+									"key": "longitude",
+									"value": "77.5946",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/predictPlant",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"predictPlant"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Predict Livestock Disease (Multipart)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "latitude",
+									"value": "12.9716",
+									"type": "text"
+								},
+								{
+									"key": "longitude",
+									"value": "77.5946",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/predictAnimal",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"predictAnimal"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Crop Analytics",
+			"item": [
+				{
+					"name": "Crop Recommendation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"state\": \"Karnataka\",\n    \"district\": \"Mandya\",\n    \"season\": \"Kharif\",\n    \"soilType\": \"Clayey\",\n    \"nitrogen\": 45,\n    \"phosphorus\": 50,\n    \"potassium\": 40,\n    \"temperature\": 28.5,\n    \"humidity\": 72.0,\n    \"rainfall\": 150.0\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/cropRecommendation",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"cropRecommendation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fertilizer Recommendation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nitrogen\": 30,\n    \"phosphorus\": 45,\n    \"potassium\": 50,\n    \"temperature\": 28.0,\n    \"humidity\": 70.0,\n    \"moisture\": 35.0,\n    \"crop\": \"Rice\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/fertilizerRecommendation",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"fertilizerRecommendation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Yield Prediction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"area\": 2.5,\n    \"rainfall\": 650.0,\n    \"fertilizer\": 250.0,\n    \"crop\": \"Rice\",\n    \"temperature\": 28.0,\n    \"humidity\": 70.0,\n    \"soil\": \"Alluvial\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/yieldPrediction",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"yieldPrediction"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Price Prediction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"crop\": \"Rice\",\n    \"state\": \"Karnataka\",\n    \"market\": \"Mandya APMC\",\n    \"month\": \"October\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/pricePrediction",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"pricePrediction"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Consultations & Alerts",
+			"item": [
+				{
+					"name": "Book Vet Consultation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"vetId\": \"2\",\n    \"date\": \"2026-06-29\",\n    \"time\": \"10:30\",\n    \"disease\": \"Lumpy Skin signs\",\n    \"notes\": \"My cow has nodular rashes on the neck and back.\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/appointments/book",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"appointments",
+								"book"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Broadcast Global Alert (Admin Only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_jwt_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Lumpy Skin Outbreak warning\",\n    \"message\": \"Critical case spike reported in Mandya district. Isolate cows immediately.\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/admin/alerts/broadcast",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"admin",
+								"alerts",
+								"broadcast"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "jwt_token",
+			"value": "YOUR_FARMER_JWT_HERE"
+		},
+		{
+			"key": "admin_jwt_token",
+			"value": "YOUR_ADMIN_JWT_HERE"
+		}
+	]
+}
