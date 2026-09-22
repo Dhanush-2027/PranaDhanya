@@ -1,0 +1,9 @@
+{
+    "total_samples": 3,
+    "missing_values": 0,
+    "duplicate_records": 0,
+    "corrupted_records": 0,
+    "classes": [],
+    "samples_per_class": {},
+    "class_imbalance_statistics": {}
+}

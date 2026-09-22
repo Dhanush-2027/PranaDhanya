@@ -5,11 +5,11 @@ spring:
   application:
     name: smart-agri-portal
   profiles:
-    active: dev
+    active: prod
   datasource:
     url: jdbc:postgresql://localhost:5432/smart_agri_db
     username: postgres
-    password: postgres
+    password: 123456
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -52,3 +52,6 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        format_sql: true

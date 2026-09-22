@@ -5,7 +5,7 @@ Trains:
 1. Crop Recommendation - XGBoost Classifier
 2. Yield Prediction - Random Forest Regressor
 3. Price Prediction - Random Forest Regressor
-4. Fertilizer Recommendation - XGBoost Classifier
+4. Fertilizer Recommendation - Random Forest Classifier
 5. Plant Disease Detection - ResNet9 CNN
 6. Animal Disease Detection - ResNet9 CNN
 """
@@ -84,35 +84,42 @@ def train_price_prediction(dataset_path):
     return run_command(cmd, "Training Price Prediction (Random Forest)")
 
 def train_fertilizer_recommendation(dataset_path):
-    """Train XGBoost Classifier for fertilizer recommendation"""
+    """Train Random Forest Classifier for fertilizer recommendation"""
     csv_path = os.path.join(dataset_path, 'fertilizer_prediction', 'Fertilizer Prediction.csv')
     if not os.path.exists(csv_path):
         print(f"✗ Fertilizer recommendation CSV not found at {csv_path}")
         return False
     
     cmd = f'python ai/training/train_fertilizer_recommendation.py --input "{csv_path}" --target fertilizer_name --out-dir ai/models/fertilizer_recommendation'
-    return run_command(cmd, "Training Fertilizer Recommendation (XGBoost)")
+    return run_command(cmd, "Training Fertilizer Recommendation (Random Forest)")
 
-def train_plant_disease_detection(dataset_path):
+def train_plant_disease_detection(dataset_path, epochs=10, max_samples_per_class=None):
     """Train ResNet9 CNN for plant disease detection"""
     data_dir = os.path.join(dataset_path, 'plant_disease', 'data')
     if not os.path.exists(data_dir):
         print(f"✗ Plant disease data directory not found at {data_dir}")
         return False
     
-    cmd = f'python ai/training/train_image_classifier.py --data-dir "{data_dir}" --out-dir ai/models/image_classification --name plant_resnet9 --epochs 10 --batch-size 32'
+    cmd = f'python ai/training/train_image_classifier.py --data-dir "{data_dir}" --out-dir ai/models/image_classification --name plant_resnet9 --epochs {epochs} --batch-size 32'
+    if max_samples_per_class is not None:
+        cmd += f' --max-samples-per-class {max_samples_per_class}'
     return run_command(cmd, "Training Plant Disease Detection (ResNet9 CNN)")
 
-def train_animal_disease_detection(dataset_path):
-    """Train ResNet9 CNN for animal disease detection (dog skin disease as primary)"""
-    # Using dog_skin_disease as the main animal disease dataset
-    data_dir = os.path.join(dataset_path, 'dog_skin_disease', 'train')
-    if not os.path.exists(data_dir):
-        print(f"✗ Dog skin disease data directory not found at {data_dir}")
-        return False
+def train_animal_disease_detection(dataset_path, epochs=10, max_samples_per_class=None):
+    """Train ResNet9 CNN for animal disease detection (combined cattle, dog, and goat datasets)"""
+    cattle_dir = os.path.join(dataset_path, 'cattle_diseases', 'Cows datasets')
+    dog_dir = os.path.join(dataset_path, 'dog_skin_disease', 'train')
+    goat_dir = os.path.join(dataset_path, 'livestock')
     
-    cmd = f'python ai/training/train_image_classifier.py --data-dir "{data_dir}" --out-dir ai/models/image_classification --name animal_resnet9 --epochs 10 --batch-size 32'
-    return run_command(cmd, "Training Animal Disease Detection (ResNet9 CNN)")
+    # Check that at least one exists
+    if not os.path.exists(cattle_dir) and not os.path.exists(dog_dir) and not os.path.exists(goat_dir):
+        print("✗ No animal disease datasets found")
+        return False
+        
+    cmd = f'python ai/training/train_animal_disease_combined.py --cattle-dir "{cattle_dir}" --dog-dir "{dog_dir}" --goat-dir "{goat_dir}" --epochs {epochs} --batch-size 32'
+    if max_samples_per_class is not None:
+        cmd += f' --max-samples-per-class {max_samples_per_class}'
+    return run_command(cmd, "Training Animal Disease Detection (ResNet9 CNN Combined)")
 
 def verify_models_trained(models_dir='ai/models'):
     """Verify all models were trained successfully"""
@@ -170,6 +177,10 @@ Examples:
                         help='Skip plant disease detection model')
     parser.add_argument('--skip-animal', action='store_true',
                         help='Skip animal disease detection model')
+    parser.add_argument('--epochs', type=int, default=10,
+                        help='Number of training epochs for image models')
+    parser.add_argument('--max-samples-per-class', type=int, default=None,
+                        help='Maximum number of samples to use per class for image models')
     
     args = parser.parse_args()
     
@@ -205,10 +216,14 @@ Examples:
     # Image models
     if not args.skip_image:
         if not args.skip_plant:
-            results['plant_disease'] = train_plant_disease_detection(dataset_path)
+            results['plant_disease'] = train_plant_disease_detection(
+                dataset_path, epochs=args.epochs, max_samples_per_class=args.max_samples_per_class
+            )
         
         if not args.skip_animal:
-            results['animal_disease'] = train_animal_disease_detection(dataset_path)
+            results['animal_disease'] = train_animal_disease_detection(
+                dataset_path, epochs=args.epochs, max_samples_per_class=args.max_samples_per_class
+            )
     
     # Verify all models
     all_trained = verify_models_trained()

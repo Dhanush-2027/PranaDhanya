@@ -1,0 +1,200 @@
+/* Accessibility & Layout CSS - Additional styles to replace inline styles in HTML */
+
+/* Input group sizing */
+.input-group-compact {
+    max-width: 150px;
+}
+
+/* Dropdown list scrolling */
+.dropdown-list-scrollable {
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Weather icon sizing */
+.weather-icon {
+    font-size: 3rem;
+}
+
+/* Table image thumbnail styling */
+.table-thumbnail {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+}
+
+/* Search input sizing */
+.search-input-compact {
+    max-width: 250px;
+}
+
+/* Notification close button sizing */
+.btn-close-small {
+    font-size: 0.6rem !important;
+}
+
+/* Chart container styling */
+.chart-container {
+    height: 220px;
+    position: relative;
+}
+
+/* Hide elements using Bootstrap class instead of inline display:none */
+.d-none {
+    display: none !important;
+}
+
+/* Skeleton text with 80% width */
+.skeleton-text-short {
+    width: 80%;
+}
+
+/* Profile card max width */
+.profile-card-max-width {
+    max-width: 800px;
+}
+
+/* Image preview box accessibility */
+.image-preview-box {
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.image-preview-box:focus,
+.image-preview-box:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Confidence meter styling */
+.confidence-meter {
+    background-color: #e9ecef;
+    border-radius: 4px;
+    height: 20px;
+    overflow: hidden;
+}
+
+.confidence-bar {
+    background-color: #28a745;
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Form input styling */
+.form-control,
+.form-select {
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #2E7D32;
+    box-shadow: 0 0 0 0.2rem rgba(46, 125, 50, 0.25);
+}
+
+/* Buttons with proper accessibility */
+button[title],
+a[title] {
+    text-decoration: underline dotted;
+    text-decoration-skip-ink: auto;
+}
+
+/* Voice button styling */
+.voice-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #2E7D32;
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    transition: all 0.3s ease;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.voice-btn:hover {
+    background-color: #1B5E20;
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* List styling fixes for ARIA compliance */
+.sidebar-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    role: navigation;
+}
+
+.sidebar-nav-item {
+    list-style: none;
+}
+
+/* Notifications count badge */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+/* Dark mode compatibility */
+body.dark-mode .input-group-compact,
+body.dark-mode .dropdown-list-scrollable {
+    background-color: #1E1E1E;
+    color: #ECEFF1;
+}
+
+body.dark-mode .confidence-meter {
+    background-color: #333333;
+}
+
+body.dark-mode .voice-btn {
+    background-color: #2E7D32;
+    color: white;
+}
+
+body.dark-mode .voice-btn:hover {
+    background-color: #1B5E20;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .input-group-compact {
+        max-width: 100%;
+    }
+    
+    .dropdown-list-scrollable {
+        width: 100vw;
+        max-width: 320px;
+    }
+    
+    .voice-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .profile-card-max-width {
+        max-width: 100%;
+    }
+}

@@ -1,0 +1,86 @@
+{
+    "accuracy": 0.6731448763250883,
+    "macro_avg_f1": 0.6220102660864097,
+    "weighted_avg_f1": 0.6616302215526858,
+    "classification_report": {
+        "cattle_foot_and_mouth": {
+            "precision": 0.609271523178808,
+            "recall": 0.6917293233082706,
+            "f1-score": 0.647887323943662,
+            "support": 133.0
+        },
+        "cattle_healthy": {
+            "precision": 0.6772908366533864,
+            "recall": 0.6827309236947792,
+            "f1-score": 0.68,
+            "support": 249.0
+        },
+        "cattle_lumpy": {
+            "precision": 0.7137546468401487,
+            "recall": 0.7529411764705882,
+            "f1-score": 0.732824427480916,
+            "support": 255.0
+        },
+        "dog_demodicosis": {
+            "precision": 0.7813953488372093,
+            "recall": 0.9385474860335196,
+            "f1-score": 0.8527918781725888,
+            "support": 179.0
+        },
+        "dog_dermatitis": {
+            "precision": 0.7704918032786885,
+            "recall": 0.5662650602409639,
+            "f1-score": 0.6527777777777778,
+            "support": 166.0
+        },
+        "dog_fungal_infections": {
+            "precision": 0.6285714285714286,
+            "recall": 0.4731182795698925,
+            "f1-score": 0.5398773006134969,
+            "support": 93.0
+        },
+        "dog_healthy": {
+            "precision": 0.5704697986577181,
+            "recall": 0.6159420289855072,
+            "f1-score": 0.5923344947735192,
+            "support": 138.0
+        },
+        "dog_hypersensitivity": {
+            "precision": 0.5333333333333333,
+            "recall": 0.11764705882352941,
+            "f1-score": 0.1927710843373494,
+            "support": 68.0
+        },
+        "dog_ringworm": {
+            "precision": 0.6105263157894737,
+            "recall": 0.7873303167420814,
+            "f1-score": 0.6877470355731226,
+            "support": 221.0
+        },
+        "goat_healthy": {
+            "precision": 0.7714285714285715,
+            "recall": 0.4909090909090909,
+            "f1-score": 0.6,
+            "support": 110.0
+        },
+        "goat_unhealthy": {
+            "precision": 0.6138613861386139,
+            "recall": 0.7209302325581395,
+            "f1-score": 0.6631016042780749,
+            "support": 86.0
+        },
+        "accuracy": 0.6731448763250883,
+        "macro avg": {
+            "precision": 0.6618540902461254,
+            "recall": 0.6216446343033056,
+            "f1-score": 0.6220102660864097,
+            "support": 1698.0
+        },
+        "weighted avg": {
+            "precision": 0.6746063322926662,
+            "recall": 0.6731448763250883,
+            "f1-score": 0.6616302215526858,
+            "support": 1698.0
+        }
+    }
+}

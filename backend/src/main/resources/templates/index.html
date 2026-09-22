@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Custom Style -->
     <link href="/css/style.css" rel="stylesheet">
+    <!-- Accessibility CSS -->
+    <link href="/css/accessibility.css" rel="stylesheet">
 </head>
 <body>
 
@@ -424,8 +426,8 @@
                                 <input type="password" name="password" class="form-control" required minlength="6">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Email Address</label>
-                                <input type="email" name="email" class="form-control" required>
+                                <label class="form-label">Email Address <span class="text-muted">(Optional)</span></label>
+                                <input type="email" name="email" class="form-control" placeholder="Leave blank if not available">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Full Name</label>

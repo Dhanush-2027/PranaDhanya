@@ -1,0 +1,150 @@
+{
+    "crop_recommendation": {
+        "model_name": "Crop Recommendation (XGBoost)",
+        "dataset_stats": {
+            "total_samples": 2200,
+            "n_classes": 22,
+            "missing_values": 0,
+            "duplicate_records": 0,
+            "class_distribution": {
+                "rice": 100,
+                "maize": 100,
+                "chickpea": 100,
+                "kidneybeans": 100,
+                "pigeonpeas": 100,
+                "mothbeans": 100,
+                "mungbean": 100,
+                "blackgram": 100,
+                "lentil": 100,
+                "pomegranate": 100,
+                "banana": 100,
+                "mango": 100,
+                "grapes": 100,
+                "watermelon": 100,
+                "muskmelon": 100,
+                "apple": 100,
+                "orange": 100,
+                "papaya": 100,
+                "coconut": 100,
+                "cotton": 100,
+                "jute": 100,
+                "coffee": 100
+            }
+        },
+        "test_metrics": {
+            "accuracy": 0.9863636363636363,
+            "precision": 0.9871015348288075,
+            "recall": 0.9863636363636363,
+            "f1_score": 0.9862203221959319
+        },
+        "latencies": {
+            "direct_ms": 0.0828862190246582,
+            "api_ms": 18.141536712646484
+        },
+        "api_match_rate": 0.98
+    },
+    "fertilizer_recommendation": {
+        "model_name": "Fertilizer Recommendation (XGBoost)",
+        "dataset_stats": {
+            "total_samples": 99,
+            "n_classes": 7,
+            "missing_values": 0,
+            "duplicate_records": 0,
+            "class_distribution": {
+                "Urea": 22,
+                "DAP": 18,
+                "28-28": 17,
+                "14-35-14": 14,
+                "20-20": 14,
+                "17-17-17": 7,
+                "10-26-26": 7
+            }
+        },
+        "test_metrics": {
+            "accuracy": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1_score": 1.0
+        },
+        "latencies": {
+            "direct_ms": 0.2499103546142578,
+            "api_ms": 10.944092273712158
+        },
+        "api_match_rate": 1.0
+    },
+    "yield_prediction": {
+        "model_name": "Yield Prediction (Random Forest)",
+        "dataset_stats": {
+            "total_samples": 3,
+            "n_classes": 3,
+            "missing_values": 0,
+            "duplicate_records": 0,
+            "class_distribution": {
+                "4.5": 1,
+                "1.2": 1,
+                "9.0": 1
+            }
+        },
+        "test_metrics": {
+            "mae": 1.1249999999999991,
+            "mse": 1.5797429999999961,
+            "r2_score": 0.845426320939335
+        },
+        "latencies": {
+            "direct_ms": 4.341602325439453,
+            "api_ms": 14.331738154093424
+        },
+        "api_match_rate": 1.0
+    },
+    "price_prediction": {
+        "model_name": "Price Prediction (Random Forest)",
+        "dataset_stats": {
+            "total_samples": 3,
+            "n_classes": 3,
+            "missing_values": 0,
+            "duplicate_records": 0,
+            "class_distribution": {
+                "2200": 1,
+                "2000": 1,
+                "2500": 1
+            }
+        },
+        "test_metrics": {
+            "mae": 71.0,
+            "mse": 6507.0,
+            "r2_score": 0.8458868421052632
+        },
+        "latencies": {
+            "direct_ms": 2.926985422770182,
+            "api_ms": 13.657808303833008
+        },
+        "api_match_rate": 1.0
+    },
+    "plant_disease": {
+        "model_name": "Plant Disease Detection (ResNet9 CNN)",
+        "classes_count": 71,
+        "total_images": 113625,
+        "latencies": {
+            "direct_ms": 103.22510004043579,
+            "api_ms": 197.2529172897339
+        },
+        "api_match_rate": 1.0
+    },
+    "animal_disease": {
+        "model_name": "Animal Disease Detection (ResNet9 CNN)",
+        "classes_count": 11,
+        "total_images": 7608,
+        "latencies": {
+            "direct_ms": 78.41577529907227,
+            "api_ms": 113.79950046539307
+        },
+        "api_match_rate": 1.0
+    },
+    "performance": {
+        "total_execution_time_s": 17.421037912368774,
+        "initial_memory_mb": 313.6640625,
+        "final_memory_mb": 476.72265625,
+        "memory_delta_mb": 163.05859375,
+        "cpu_percent": 403.2
+    }
+}

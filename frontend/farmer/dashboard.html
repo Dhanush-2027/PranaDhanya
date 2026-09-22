@@ -12,6 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Custom Style -->
     <link href="../css/style.css" rel="stylesheet">
+    <!-- Accessibility CSS -->
+    <link href="../css/accessibility.css" rel="stylesheet">
 </head>
 <body>
 
@@ -22,32 +24,32 @@
                 <i class="fa-solid fa-seedling text-warning"></i> FARMER CONSOLE
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#farmerTopbar">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#farmerTopbar" title="Toggle navigation menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="farmerTopbar">
                 <div class="ms-auto d-flex align-items-center gap-3 mt-3 mt-lg-0">
-                    <div class="input-group input-group-sm" style="max-width: 150px;">
+                    <div class="input-group input-group-sm input-group-compact">
                         <span class="input-group-text"><i class="fa-solid fa-language"></i></span>
-                        <select class="form-select" id="langSwitcher" onchange="translateDashboard(this.value)">
+                        <select class="form-select" id="langSwitcher" onchange="translateDashboard(this.value)" title="Select language">
                             <option value="en">English</option>
                             <option value="kn">ಕನ್ನಡ (Kannada)</option>
                             <option value="hi">हिन्दी (Hindi)</option>
                         </select>
                     </div>
 
-                    <button class="btn btn-outline-light btn-sm" onclick="toggleDarkMode()">
+                    <button class="btn btn-outline-light btn-sm" onclick="toggleDarkMode()" title="Toggle dark mode theme">
                         <i class="fa-solid fa-circle-half-stroke"></i> <span class="d-none d-md-inline">Theme</span>
                     </button>
 
                     <!-- Notifications Dropdown -->
                     <div class="dropdown">
-                        <button class="btn btn-outline-light btn-sm position-relative" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn btn-outline-light btn-sm position-relative" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="View notifications">
                             <i class="fa-solid fa-bell"></i>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notifCountBadge">0</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="notifDropdown" id="notifDropdownList" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                        <ul class="dropdown-menu dropdown-menu-end p-2 dropdown-list-scrollable" aria-labelledby="notifDropdown" id="notifDropdownList">
                             <li><h6 class="dropdown-header font-weight-bold">Notifications Log</h6></li>
                             <!-- Populated dynamically -->
                         </ul>
@@ -58,7 +60,7 @@
                         <span class="font-weight-semibold" id="farmerHeaderName">Farmer Name</span>
                     </div>
 
-                    <button onclick="handleLogout()" class="btn btn-danger btn-sm px-3"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    <button onclick="handleLogout()" class="btn btn-danger btn-sm px-3" title="Logout from account"><i class="fa-solid fa-right-from-bracket"></i></button>
                 </div>
             </div>
         </div>
@@ -135,7 +137,7 @@
                                     <h2 class="mb-0">29°C</h2>
                                     <p class="text-muted mb-0">Partly Cloudy | Mandya, India</p>
                                 </div>
-                                <div style="font-size: 3rem;" class="text-success"><i class="fa-solid fa-cloud-sun-rain"></i></div>
+                                <div class="weather-icon text-success"><i class="fa-solid fa-cloud-sun-rain"></i></div>
                             </div>
                             <div class="row text-center mt-3 pt-3 border-top g-2">
                                 <div class="col-4">
@@ -216,27 +218,22 @@
                             <form id="plantForm" onsubmit="submitPlantDiagnosis(event)">
                                 <div class="mb-3">
                                     <label class="form-label font-weight-semibold">Leaf Photo</label>
-                                    <div class="image-preview-box" onclick="document.getElementById('plantImageFile').click()">
+                                    <div class="image-preview-box" onclick="document.getElementById('plantImageFile').click()" role="button" tabindex="0" title="Upload plant leaf image">
                                         <i class="fa-solid fa-cloud-arrow-up fs-2 text-muted mb-2"></i>
                                         <span class="text-muted">Drag &amp; drop or click to upload</span>
-                                        <input type="file" id="plantImageFile" accept="image/*" style="display:none" onchange="previewImage(this, 'plantPreview')" required>
-                                        <img id="plantPreview" src="" alt="Upload Preview" style="display:none">
+                                        <input type="file" id="plantImageFile" accept="image/*" class="d-none" onchange="previewImage(this, 'plantPreview')" required title="Select plant image file">
+                                        <img id="plantPreview" src="" alt="Upload Preview" class="d-none">
                                     </div>
                                 </div>
-                                <div class="row g-2 mb-4">
-                                    <div class="col-6">
-                                        <label class="form-label small">Latitude (NDLM)</label>
-                                        <input type="number" step="any" id="plantLat" class="form-control form-control-sm" placeholder="12.9716">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small">Longitude (NDLM)</label>
-                                        <input type="number" step="any" id="plantLon" class="form-control form-control-sm" placeholder="77.5946">
-                                    </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary flex-grow-1" id="plantSubmitBtn">
+                                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="plantLoader"></span>
+                                        Analyze Crop Health
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="plantResetBtn" onclick="resetPlantDiagnosis()">
+                                        Reset
+                                    </button>
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100" id="plantSubmitBtn">
-                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="plantLoader"></span>
-                                    Analyze Crop Health
-                                </button>
                             </form>
                         </div>
                         <div class="col-lg-6">
@@ -251,12 +248,12 @@
                                     <span class="text-muted d-block small">Confidence Level</span>
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="confidence-meter flex-grow-1 mt-0">
-                                            <div class="confidence-bar" id="plantResConfidenceBar" style="width: 0%"></div>
+                                            <div class="confidence-bar" id="plantResConfidenceBar"></div>
                                         </div>
                                         <span class="small font-weight-bold" id="plantResConfidenceText">0%</span>
                                     </div>
                                 </div>
-                                <div class="alert alert-info py-2" id="plantVetReferral" style="display:none;">
+                                <div class="alert alert-info py-2 d-none" id="plantVetReferral">
                                     <i class="fa-solid fa-circle-info me-2"></i> Confidence is below 70%. We recommend scheduling a physical vet appointment.
                                 </div>
                                 <div class="mb-3">
@@ -284,7 +281,7 @@
                             <div class="border rounded p-4 bg-light d-none" id="plantSkeleton">
                                 <div class="skeleton skeleton-title"></div>
                                 <div class="skeleton skeleton-text"></div>
-                                <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                                <div class="skeleton skeleton-text skeleton-text-short"></div>
                                 <div class="skeleton skeleton-card mt-3"></div>
                             </div>
                         </div>
@@ -303,27 +300,22 @@
                             <form id="animalForm" onsubmit="submitAnimalDiagnosis(event)">
                                 <div class="mb-3">
                                     <label class="form-label font-weight-semibold">Animal Image File</label>
-                                    <div class="image-preview-box" onclick="document.getElementById('animalImageFile').click()">
+                                    <div class="image-preview-box" onclick="document.getElementById('animalImageFile').click()" role="button" tabindex="0" title="Upload animal/livestock image">
                                         <i class="fa-solid fa-camera fs-2 text-muted mb-2"></i>
                                         <span class="text-muted">Upload cattle skin or symptom photo</span>
-                                        <input type="file" id="animalImageFile" accept="image/*" style="display:none" onchange="previewImage(this, 'animalPreview')" required>
-                                        <img id="animalPreview" src="" alt="Upload Preview" style="display:none">
+                                        <input type="file" id="animalImageFile" accept="image/*" class="d-none" onchange="previewImage(this, 'animalPreview')" required title="Select animal image file">
+                                        <img id="animalPreview" src="" alt="Upload Preview" class="d-none">
                                     </div>
                                 </div>
-                                <div class="row g-2 mb-4">
-                                    <div class="col-6">
-                                        <label class="form-label small">Latitude</label>
-                                        <input type="number" step="any" id="animalLat" class="form-control form-control-sm" placeholder="12.9716">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small">Longitude</label>
-                                        <input type="number" step="any" id="animalLon" class="form-control form-control-sm" placeholder="77.5946">
-                                    </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary flex-grow-1" id="animalSubmitBtn">
+                                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="animalLoader"></span>
+                                        Analyze Livestock Health
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="animalResetBtn" onclick="resetAnimalDiagnosis()">
+                                        Reset
+                                    </button>
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100" id="animalSubmitBtn">
-                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="animalLoader"></span>
-                                    Analyze Livestock Health
-                                </button>
                             </form>
                         </div>
                         <div class="col-lg-6">
@@ -363,7 +355,7 @@
                             <div class="border rounded p-4 bg-light d-none" id="animalSkeleton">
                                 <div class="skeleton skeleton-title"></div>
                                 <div class="skeleton skeleton-text"></div>
-                                <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                                <div class="skeleton skeleton-text skeleton-text-short"></div>
                                 <div class="skeleton skeleton-card mt-3"></div>
                             </div>
                         </div>
@@ -561,30 +553,16 @@
                         <div class="col-lg-5">
                             <form id="priceForm" onsubmit="submitPricePrediction(event)">
                                 <div class="mb-3">
-                                    <label class="form-label">Crop Type</label>
-                                    <select id="priceCrop" class="form-select">
-                                        <option value="Rice">Rice (Paddy)</option>
-                                        <option value="Maize">Maize (Corn)</option>
-                                        <option value="Chickpea">Chickpea (Bengal Gram)</option>
-                                        <option value="Grapes">Grapes (Horticulture)</option>
-                                    </select>
+                                    <label class="form-label">Model Feature 1</label>
+                                    <input type="number" step="any" id="priceFeature1" class="form-control" value="10" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">State</label>
-                                    <input type="text" id="priceState" class="form-control" value="Karnataka" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Wholesale Mandi Market</label>
-                                    <input type="text" id="priceMarket" class="form-control" value="Mandya APMC" required>
+                                    <label class="form-label">Model Feature 2</label>
+                                    <input type="number" step="any" id="priceFeature2" class="form-control" value="0.5" required>
                                 </div>
                                 <div class="mb-4">
-                                    <label class="form-label">Target Sale Month</label>
-                                    <select id="priceMonth" class="form-select">
-                                        <option value="October">October</option>
-                                        <option value="November">November</option>
-                                        <option value="December">December</option>
-                                        <option value="January">January</option>
-                                    </select>
+                                    <label class="form-label">Model Feature 3</label>
+                                    <input type="number" step="any" id="priceFeature3" class="form-control" value="3" required>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100">Forecast Price Trajectory</button>
                             </form>
@@ -605,7 +583,7 @@
                                 </div>
                                 <div class="mt-4">
                                     <span class="text-muted small d-block mb-2">Historical Valuation Chart (Last 4 Months)</span>
-                                    <div style="height: 220px; position: relative;">
+                                    <div class="chart-container">
                                         <canvas id="priceHistoryChart"></canvas>
                                     </div>
                                 </div>
@@ -682,8 +660,8 @@
                     <p class="text-muted">History archive of plant leaf and animal symptom uploads. Keep track of previous AI diagnostics, NDLM coordinate tags, and severity logs.</p>
                     <hr>
                     <div class="d-flex justify-content-between mb-3">
-                        <input type="text" id="recordSearch" class="form-control form-control-sm" placeholder="Search disease logs..." style="max-width: 250px;" onkeyup="filterRecords(this.value)">
-                        <button class="btn btn-sm btn-outline-success" onclick="exportRecordsPDF()"><i class="fa-solid fa-file-pdf me-1"></i> Export PDF Log</button>
+                        <input type="text" id="recordSearch" class="form-control form-control-sm search-input-compact" placeholder="Search disease logs..." onkeyup="filterRecords(this.value)" title="Search disease logs">
+                        <button class="btn btn-sm btn-outline-success" onclick="exportRecordsPDF()" title="Export records as PDF"><i class="fa-solid fa-file-pdf me-1"></i> Export PDF Log</button>
                     </div>
                     <ul class="nav nav-tabs mb-3" id="recordsTab" role="tablist">
                         <li class="nav-item"><button class="nav-link active" id="plant-tab" data-bs-toggle="tab" data-bs-target="#plantRecs" type="button">Plant Disease Case History</button></li>
@@ -747,14 +725,14 @@
                             <div class="border rounded p-3 bg-light h-100">
                                 <h5 class="text-success font-weight-bold"><i class="fa-solid fa-hand-holding-dollar"></i> PM-KISAN Samman Nidhi</h5>
                                 <p class="small text-muted">Income support of ₹ 6,000 per year in three equal installments to all landholding farmer families across the country.</p>
-                                <a href="https://pmkisan.gov.in" target="_blank" class="btn btn-sm btn-outline-primary">Check Installment Status</a>
+                                <a href="https://pmkisan.gov.in" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">Check Installment Status</a>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="border rounded p-3 bg-light h-100">
                                 <h5 class="text-success font-weight-bold"><i class="fa-solid fa-shield-halved"></i> PM Fasal Bima Yojana (PMFBY)</h5>
                                 <p class="small text-muted">Crop insurance scheme offering financial coverage against crop losses resulting from natural calamities, pests, or disease outbreaks.</p>
-                                <a href="https://pmfby.gov.in" target="_blank" class="btn btn-sm btn-outline-primary">Calculate Insurance Premium</a>
+                                <a href="https://pmfby.gov.in" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">Calculate Insurance Premium</a>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -777,7 +755,7 @@
 
             <!-- PANE 9: PROFILE SETTINGS -->
             <div id="pane-profileSettings" class="pane-div d-none">
-                <div class="custom-card mb-4" style="max-width: 800px;">
+                <div class="custom-card mb-4 profile-card-max-width">
                     <h2><i class="fa-solid fa-user-gear text-success me-2"></i> Update Profile Details</h2>
                     <p class="text-muted">Manage personal contact parameters, phone numbers, and village district geolocation references.</p>
                     <hr>
@@ -813,7 +791,7 @@
     </div>
 
     <!-- VOICE ASSISTANT BUTTON -->
-    <button class="voice-btn animate__animated animate__pulse animate__infinite" onclick="triggerVoiceAssistant()">
+    <button class="voice-btn animate__animated animate__pulse animate__infinite" onclick="triggerVoiceAssistant()" title="Open voice assistant">
         <i class="fa-solid fa-microphone"></i>
     </button>
 
@@ -828,7 +806,7 @@
                 <div class="modal-body p-4" id="presModalBody">
                     <div class="skeleton skeleton-title"></div>
                     <div class="skeleton skeleton-text"></div>
-                    <div class="skeleton skeleton-text" style="width: 80%"></div>
+                    <div class="skeleton skeleton-text skeleton-text-short"></div>
                 </div>
                 <div class="modal-footer border-0">
                     <button class="btn btn-sm btn-outline-success" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Rx</button>
@@ -896,7 +874,7 @@
                             <div class="dropdown-item py-2 border-bottom ${!n.read ? 'bg-light' : ''}">
                                 <div class="d-flex justify-content-between">
                                     <span class="small font-weight-bold">${n.title}</span>
-                                    <button class="btn btn-close" style="font-size: 0.6rem;" onclick="markNotifRead(${n.id}, this)"></button>
+                                    <button class="btn btn-close btn-close-small" onclick="markNotifRead(${n.id}, this)" title="Mark notification as read"></button>
                                 </div>
                                 <p class="small text-muted mb-0">${n.message}</p>
                             </div>
@@ -952,12 +930,12 @@
                     let severityText = pr.severityScore > 0.6 ? 'High' : (pr.severityScore >= 0.35 ? 'Medium' : 'Low');
                     plantBody.innerHTML += `
                         <tr>
-                            <td><img src="http://localhost:8080${pr.imageUrl}" alt="Crop leaf" class="rounded" style="width: 50px; height: 50px; object-fit: cover;"></td>
+                            <td><img src="http://localhost:8080${pr.imageUrl}" alt="Crop leaf" class="rounded table-thumbnail"></td>
                             <td class="font-weight-semibold">${pr.diseaseName}</td>
                             <td>${pr.confidence}%</td>
                             <td><span class="badge ${badgeClass}">${severityText}</span></td>
                             <td>${pr.timestamp.split('T')[0]}</td>
-                            <td><button class="btn btn-sm btn-outline-danger" onclick="deleteRecord(${pr.id}, 'plant', this)"><i class="fa-solid fa-trash"></i></button></td>
+                            <td><button class="btn btn-sm btn-outline-danger" onclick="deleteRecord(${pr.id}, 'plant', this)" title="Delete plant record"><i class="fa-solid fa-trash"></i></button></td>
                         </tr>
                     `;
                 });
@@ -972,13 +950,13 @@
                     let badgeClass = ar.severity === 'High' ? 'bg-danger' : (ar.severity === 'Medium' ? 'bg-warning text-dark' : 'bg-success');
                     animalBody.innerHTML += `
                         <tr>
-                            <td><img src="http://localhost:8080${ar.imageUrl}" alt="Cattle" class="rounded" style="width: 50px; height: 50px; object-fit: cover;"></td>
+                            <td><img src="http://localhost:8080${ar.imageUrl}" alt="Cattle" class="rounded table-thumbnail"></td>
                             <td>${ar.animalType}</td>
                             <td class="font-weight-semibold">${ar.diseaseName}</td>
                             <td>${ar.confidence}%</td>
                             <td><span class="badge ${badgeClass}">${ar.severity}</span></td>
                             <td>${ar.timestamp.split('T')[0]}</td>
-                            <td><button class="btn btn-sm btn-outline-danger" onclick="deleteRecord(${ar.id}, 'animal', this)"><i class="fa-solid fa-trash"></i></button></td>
+                            <td><button class="btn btn-sm btn-outline-danger" onclick="deleteRecord(${ar.id}, 'animal', this)" title="Delete animal record"><i class="fa-solid fa-trash"></i></button></td>
                         </tr>
                     `;
                 });
@@ -1022,17 +1000,139 @@
             }
         }
 
+        // Store current object URLs to revoke them and avoid memory leaks
+        const activeObjectUrls = {};
+
         function previewImage(input, previewId) {
             if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var preview = document.getElementById(previewId);
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                    preview.previousElementSibling.style.display = 'none';
+                const file = input.files[0];
+
+                // Validate file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                if (!allowedTypes.includes(file.type.toLowerCase())) {
+                    alert("Unsupported file type. Please select a JPG, JPEG, PNG, or WEBP image.");
+                    input.value = ''; // Clear selection
+                    return;
                 }
-                reader.readAsDataURL(input.files[0]);
+
+                // Validate file size (10MB max to match backend limit)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert("File size exceeds the 10MB limit.");
+                    input.value = ''; // Clear selection
+                    return;
+                }
+
+                const preview = document.getElementById(previewId);
+
+                // Revoke existing object URL for this preview element if there is one
+                if (activeObjectUrls[previewId]) {
+                    URL.revokeObjectURL(activeObjectUrls[previewId]);
+                }
+
+                // Generate new object URL
+                const objectUrl = URL.createObjectURL(file);
+                activeObjectUrls[previewId] = objectUrl;
+
+                preview.src = objectUrl;
+                preview.classList.remove('d-none');
+                preview.style.display = 'block';
+
+                // Hide the icon and text inside the parent image-preview-box
+                const parentBox = input.closest('.image-preview-box');
+                if (parentBox) {
+                    const icon = parentBox.querySelector('i');
+                    const textSpan = parentBox.querySelector('span');
+                    if (icon) icon.classList.add('d-none');
+                    if (textSpan) textSpan.classList.add('d-none');
+                }
             }
+        }
+
+        function resetPlantDiagnosis() {
+            const input = document.getElementById('plantImageFile');
+            const preview = document.getElementById('plantPreview');
+            
+            // Clear input value
+            input.value = '';
+            
+            // Revoke object URL
+            if (activeObjectUrls['plantPreview']) {
+                URL.revokeObjectURL(activeObjectUrls['plantPreview']);
+                delete activeObjectUrls['plantPreview'];
+            }
+            
+            // Clear and hide preview image
+            preview.src = '';
+            preview.classList.add('d-none');
+            preview.style.display = 'none';
+
+            // Show icon and text
+            const parentBox = input.closest('.image-preview-box');
+            if (parentBox) {
+                const icon = parentBox.querySelector('i');
+                const textSpan = parentBox.querySelector('span');
+                if (icon) icon.classList.remove('d-none');
+                if (textSpan) textSpan.classList.remove('d-none');
+            }
+
+            // Hide results and skeletons
+            document.getElementById('plantResultBox').classList.add('d-none');
+            document.getElementById('plantSkeleton').classList.add('d-none');
+
+            // Reset outcome fields
+            document.getElementById('plantResDisease').innerText = '-';
+            document.getElementById('plantResConfidenceText').innerText = '0%';
+            document.getElementById('plantResConfidenceBar').style.width = '0%';
+            document.getElementById('plantResDesc').innerText = '-';
+            document.getElementById('plantResSymptoms').innerText = '-';
+            document.getElementById('plantResOrganic').innerText = '-';
+            document.getElementById('plantResChemical').innerText = '-';
+            document.getElementById('plantResImmediate').innerText = '-';
+            document.getElementById('plantVetReferral').style.display = 'none';
+        }
+
+        function resetAnimalDiagnosis() {
+            const input = document.getElementById('animalImageFile');
+            const preview = document.getElementById('animalPreview');
+            
+            // Clear input value
+            input.value = '';
+            
+            // Revoke object URL
+            if (activeObjectUrls['animalPreview']) {
+                URL.revokeObjectURL(activeObjectUrls['animalPreview']);
+                delete activeObjectUrls['animalPreview'];
+            }
+            
+            // Clear and hide preview image
+            preview.src = '';
+            preview.classList.add('d-none');
+            preview.style.display = 'none';
+
+            // Show icon and text
+            const parentBox = input.closest('.image-preview-box');
+            if (parentBox) {
+                const icon = parentBox.querySelector('i');
+                const textSpan = parentBox.querySelector('span');
+                if (icon) icon.classList.remove('d-none');
+                if (textSpan) textSpan.classList.remove('d-none');
+            }
+
+            // Hide results and skeletons
+            document.getElementById('animalResultBox').classList.add('d-none');
+            document.getElementById('animalSkeleton').classList.add('d-none');
+
+            // Reset outcome fields
+            document.getElementById('animalResDisease').innerText = '-';
+            document.getElementById('animalResSeverity').innerText = 'Low';
+            const sBadge = document.getElementById('animalResSeverity');
+            sBadge.className = 'badge';
+            sBadge.classList.add('bg-success');
+            document.getElementById('animalResSymptoms').innerText = '-';
+            document.getElementById('animalResEmergency').innerText = '-';
+            document.getElementById('animalResTreatment').innerText = '-';
+            document.getElementById('animalResIsolation').innerText = '-';
+            document.getElementById('animalResVet').innerText = '-';
         }
 
         function markNotifRead(id, buttonEl) {
@@ -1064,11 +1164,6 @@
 
             let formData = new FormData();
             formData.append("file", fileInput.files[0]);
-            let lat = document.getElementById('plantLat').value;
-            let lon = document.getElementById('plantLon').value;
-            if(lat) formData.append("latitude", lat);
-            if(lon) formData.append("longitude", lon);
-
             fetch(`${API_BASE}/predictPlant`, {
                 method: 'POST',
                 headers: { "Authorization": `Bearer ${token}` },
@@ -1095,7 +1190,10 @@
                 document.getElementById('plantResultBox').classList.remove('d-none');
                 loadDashboardData(); // Refresh history log lists
             })
-            .catch(err => alert("Error during diagnosis: " + err))
+            .catch(err => {
+                alert("Error during diagnosis: " + err);
+                document.getElementById('plantSkeleton').classList.add('d-none');
+            })
             .finally(() => {
                 document.getElementById('plantSubmitBtn').disabled = false;
                 document.getElementById('plantLoader').classList.add('d-none');
@@ -1115,11 +1213,6 @@
 
             let formData = new FormData();
             formData.append("file", fileInput.files[0]);
-            let lat = document.getElementById('animalLat').value;
-            let lon = document.getElementById('animalLon').value;
-            if(lat) formData.append("latitude", lat);
-            if(lon) formData.append("longitude", lon);
-
             fetch(`${API_BASE}/predictAnimal`, {
                 method: 'POST',
                 headers: { "Authorization": `Bearer ${token}` },
@@ -1146,7 +1239,10 @@
                 document.getElementById('animalResultBox').classList.remove('d-none');
                 loadDashboardData();
             })
-            .catch(err => alert("Error during diagnosis: " + err))
+            .catch(err => {
+                alert("Error during diagnosis: " + err);
+                document.getElementById('animalSkeleton').classList.add('d-none');
+            })
             .finally(() => {
                 document.getElementById('animalSubmitBtn').disabled = false;
                 document.getElementById('animalLoader').classList.add('d-none');
@@ -1249,12 +1345,10 @@
         let priceChart = null;
         function submitPricePrediction(e) {
             e.preventDefault();
-            let crop = document.getElementById('priceCrop').value;
             let payload = {
-                crop: crop,
-                state: document.getElementById('priceState').value,
-                market: document.getElementById('priceMarket').value,
-                month: document.getElementById('priceMonth').value
+                feature1: parseFloat(document.getElementById('priceFeature1').value),
+                feature2: parseFloat(document.getElementById('priceFeature2').value),
+                feature3: parseFloat(document.getElementById('priceFeature3').value)
             };
 
             fetch(`${API_BASE}/pricePrediction`, {
@@ -1280,9 +1374,9 @@
                 priceChart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: ['Mar', 'Apr', 'May', 'Jun'],
+                        labels: ['Feature 1', 'Feature 2', 'Feature 3', 'Predicted'],
                         datasets: [{
-                            label: crop + ' Mandi Price (₹/Quintal)',
+                            label: 'Model Price Estimate (₹/Quintal)',
                             data: dataPoints,
                             borderColor: '#2E7D32',
                             backgroundColor: 'rgba(46, 125, 50, 0.1)',

@@ -1,9 +1,11 @@
+
 import argparse
 import json
 import joblib
 import os
 import pandas as pd
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
 
@@ -58,18 +60,14 @@ def main(args):
     else:
         X_train, y_train = X, y_encoded
 
-    unique_classes = sorted(set(y_encoded))
-    if len(unique_classes) > 2:
-        model = XGBClassifier(
-            use_label_encoder=False,
-            objective='multi:softprob',
-            num_class=len(unique_classes),
-            eval_metric='mlogloss',
-            random_state=42
-        )
-    else:
-        model = XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42)
-
+    model = XGBClassifier(
+        n_estimators=100,
+        learning_rate=0.1,
+        max_depth=5,
+        use_label_encoder=False,
+        eval_metric='mlogloss',
+        random_state=42
+    )
     model.fit(X_train, y_train)
 
     os.makedirs(args.out_dir, exist_ok=True)

@@ -249,16 +249,6 @@
                                         <img id="plantPreview" src="" alt="Upload Preview" style="display:none">
                                     </div>
                                 </div>
-                                <div class="row g-2 mb-4">
-                                    <div class="col-6">
-                                        <label class="form-label small">Latitude (NDLM)</label>
-                                        <input type="number" step="any" id="plantLat" class="form-control form-control-sm" placeholder="12.9716">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small">Longitude (NDLM)</label>
-                                        <input type="number" step="any" id="plantLon" class="form-control form-control-sm" placeholder="77.5946">
-                                    </div>
-                                </div>
                                 <button type="submit" class="btn btn-primary w-100" id="plantSubmitBtn">
                                     <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="plantLoader"></span>
                                     Analyze Crop Health
@@ -336,16 +326,6 @@
                                         <img id="animalPreview" src="" alt="Upload Preview" style="display:none">
                                     </div>
                                 </div>
-                                <div class="row g-2 mb-4">
-                                    <div class="col-6">
-                                        <label class="form-label small">Latitude</label>
-                                        <input type="number" step="any" id="animalLat" class="form-control form-control-sm" placeholder="12.9716">
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small">Longitude</label>
-                                        <input type="number" step="any" id="animalLon" class="form-control form-control-sm" placeholder="77.5946">
-                                    </div>
-                                </div>
                                 <button type="submit" class="btn btn-primary w-100" id="animalSubmitBtn">
                                     <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true" id="animalLoader"></span>
                                     Analyze Livestock Health
@@ -407,23 +387,7 @@
                             <p class="text-muted small">Input N-P-K nutrient values and weather parameters to recommend optimal crop matches.</p>
                             <form id="cropRecForm" onsubmit="submitCropRecommendation(event)">
                                 <div class="row g-2 mb-3">
-                                    <div class="col-6">
-                                        <label class="form-label small">State</label>
-                                        <input type="text" id="cropState" class="form-control" value="Karnataka" required>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small">District</label>
-                                        <input type="text" id="cropDistrict" class="form-control" value="Mandya" required>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label small">Season</label>
-                                        <select id="cropSeason" class="form-select">
-                                            <option value="Kharif">Kharif</option>
-                                            <option value="Rabi">Rabi</option>
-                                            <option value="Summer">Summer</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-6">
+                                    <div class="col-12">
                                         <label class="form-label small">Soil Type</label>
                                         <select id="cropSoil" class="form-select">
                                             <option value="Clayey">Clayey</option>
@@ -996,11 +960,6 @@
 
             let formData = new FormData();
             formData.append("file", fileInput.files[0]);
-            let lat = document.getElementById('plantLat').value;
-            let lon = document.getElementById('plantLon').value;
-            if(lat) formData.append("latitude", lat);
-            if(lon) formData.append("longitude", lon);
-
             fetch('/api/predictPlant', {
                 method: 'POST',
                 body: formData
@@ -1033,7 +992,7 @@
             })
             .finally(() => {
                 document.getElementById('plantSubmitBtn').disabled = false;
-                document.getElementById('plantLoader').add('d-none');
+                document.getElementById('plantLoader').classList.add('d-none');
             });
         }
 
@@ -1050,11 +1009,6 @@
 
             let formData = new FormData();
             formData.append("file", fileInput.files[0]);
-            let lat = document.getElementById('animalLat').value;
-            let lon = document.getElementById('animalLon').value;
-            if(lat) formData.append("latitude", lat);
-            if(lon) formData.append("longitude", lon);
-
             fetch('/api/predictAnimal', {
                 method: 'POST',
                 body: formData
@@ -1093,9 +1047,6 @@
         function submitCropRecommendation(e) {
             e.preventDefault();
             let payload = {
-                state: document.getElementById('cropState').value,
-                district: document.getElementById('cropDistrict').value,
-                season: document.getElementById('cropSeason').value,
                 soilType: document.getElementById('cropSoil').value,
                 nitrogen: parseFloat(document.getElementById('cropN').value),
                 phosphorus: parseFloat(document.getElementById('cropP').value),

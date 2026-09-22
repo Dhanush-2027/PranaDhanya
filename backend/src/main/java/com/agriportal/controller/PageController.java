@@ -1,16 +1,28 @@
 package com.agriportal.controller;
 
-import com.agriportal.entity.*;
-import com.agriportal.security.services.UserDetailsImpl;
-import com.agriportal.service.*;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.util.List;
-import java.util.Map;
+import com.agriportal.entity.Appointment;
+import com.agriportal.entity.CropRecommendationRecord;
+import com.agriportal.entity.FertilizerRecommendationRecord;
+import com.agriportal.entity.LivestockDiseaseRecord;
+import com.agriportal.entity.Notification;
+import com.agriportal.entity.PlantDiseaseRecord;
+import com.agriportal.entity.PricePredictionRecord;
+import com.agriportal.entity.User;
+import com.agriportal.entity.YieldPredictionRecord;
+import com.agriportal.security.services.UserDetailsImpl;
+import com.agriportal.service.AppointmentService;
+import com.agriportal.service.NotificationService;
+import com.agriportal.service.RecordService;
+import com.agriportal.service.UserService;
 
 @Controller
 public class PageController {
@@ -31,15 +43,13 @@ public class PageController {
     public String index(Model model, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         if (userDetails != null) {
             String role = userDetails.getRole();
-            if ("ROLE_ADMIN".equals(role)) {
-                return "redirect:/admin/dashboard";
-            } else if ("ROLE_VET".equals(role)) {
-                return "redirect:/vet/dashboard";
-            } else {
-                return "redirect:/farmer/dashboard";
-            }
+            return switch (role) {
+                case "ROLE_ADMIN" -> "redirect:/admin/dashboard";
+                case "ROLE_VET" -> "redirect:/vet/dashboard";
+                default -> "redirect:/farmer/dashboard";
+            };
         }
-        
+
         List<User> vets = userService.getVets();
         model.addAttribute("vets", vets);
         return "index";

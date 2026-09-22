@@ -1,0 +1,31 @@
+{
+    "total_samples": 99,
+    "missing_values": 0,
+    "duplicate_records": 0,
+    "corrupted_records": 0,
+    "classes": [
+        "10-26-26",
+        "14-35-14",
+        "17-17-17",
+        "20-20",
+        "28-28",
+        "DAP",
+        "Urea"
+    ],
+    "samples_per_class": {
+        "Urea": 22,
+        "DAP": 18,
+        "28-28": 17,
+        "14-35-14": 14,
+        "20-20": 14,
+        "17-17-17": 7,
+        "10-26-26": 7
+    },
+    "class_imbalance_statistics": {
+        "min_class": "17-17-17",
+        "min_count": 7,
+        "max_class": "Urea",
+        "max_count": 22,
+        "ratio_min_max": 0.3181818181818182
+    }
+}

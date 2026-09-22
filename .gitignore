@@ -1,14 +1,24 @@
 # Environments and dependencies
 .venv/
+**/venv/
 venv/
 env/
 node_modules/
 .env
 .env.local
 .env.*.local
+.kilo/
 
 # Large datasets (downloaded programmatically via download_datasets.py)
 datasets/
+
+# Local uploads, scratch, debug and logs
+backend/src/main/resources/static/uploads/*
+!backend/src/main/resources/static/uploads/.gitkeep
+debug/
+scratch/
+ai/logs/
+*.log
 
 # IDEs and OS files
 .vscode/
@@ -40,3 +50,4 @@ target/
 build/
 dist/
 out/
+

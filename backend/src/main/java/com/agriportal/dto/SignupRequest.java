@@ -13,8 +13,7 @@ public class SignupRequest {
     @Size(min = 6, max = 100)
     private String password;
 
-    @NotBlank
-    @Email
+    @Email(message = "Email should be valid if provided")
     private String email;
 
     @NotBlank

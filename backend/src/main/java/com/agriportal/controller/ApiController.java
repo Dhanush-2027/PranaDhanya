@@ -1,14 +1,5 @@
 package com.agriportal.controller;
 
-import com.agriportal.entity.*;
-import com.agriportal.service.*;
-import com.agriportal.security.services.UserDetailsImpl;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,6 +10,36 @@ import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.agriportal.entity.Appointment;
+import com.agriportal.entity.CropRecommendationRecord;
+import com.agriportal.entity.FertilizerRecommendationRecord;
+import com.agriportal.entity.LivestockDiseaseRecord;
+import com.agriportal.entity.Notification;
+import com.agriportal.entity.PlantDiseaseRecord;
+import com.agriportal.entity.PricePredictionRecord;
+import com.agriportal.entity.User;
+import com.agriportal.entity.YieldPredictionRecord;
+import com.agriportal.security.services.UserDetailsImpl;
+import com.agriportal.service.AiService;
+import com.agriportal.service.AppointmentService;
+import com.agriportal.service.NotificationService;
+import com.agriportal.service.RecordService;
+import com.agriportal.service.UserService;
 
 @RestController
 @RequestMapping("/api")
@@ -60,6 +81,20 @@ public class ApiController {
             // Fallback: return a default dummy URL or absolute path in case directory doesn't exist
             return "/images/placeholder-leaf.jpg";
         }
+    }
+
+    private double parseDoubleValue(Object value) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        return Double.parseDouble(String.valueOf(value));
+    }
+
+    private long parseLongValue(Object value) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        return Long.parseLong(String.valueOf(value));
     }
 
     @PostMapping("/predictPlant")
@@ -151,7 +186,7 @@ public class ApiController {
 
         String recCrop = (String) rec.get("recommendedCrop");
         Double confidence = (Double) rec.get("confidence");
-        Double expectedYield = Double.parseDouble(rec.get("expectedYield").toString());
+        Double expectedYield = parseDoubleValue(rec.get("expectedYield"));
         String reason = (String) rec.get("reason");
 
         CropRecommendationRecord record = recordService.saveCropRecord(
@@ -160,12 +195,12 @@ public class ApiController {
                 (String) inputs.get("district"),
                 (String) inputs.get("season"),
                 (String) inputs.get("soilType"),
-                Double.parseDouble(inputs.get("nitrogen").toString()),
-                Double.parseDouble(inputs.get("phosphorus").toString()),
-                Double.parseDouble(inputs.get("potassium").toString()),
-                Double.parseDouble(inputs.get("temperature").toString()),
-                Double.parseDouble(inputs.get("humidity").toString()),
-                Double.parseDouble(inputs.get("rainfall").toString()),
+                parseDoubleValue(inputs.get("nitrogen")),
+                parseDoubleValue(inputs.get("phosphorus")),
+                parseDoubleValue(inputs.get("potassium")),
+                parseDoubleValue(inputs.get("temperature")),
+                parseDoubleValue(inputs.get("humidity")),
+                parseDoubleValue(inputs.get("rainfall")),
                 recCrop,
                 confidence,
                 expectedYield,
@@ -190,12 +225,12 @@ public class ApiController {
 
         YieldPredictionRecord record = recordService.saveYieldRecord(
                 user,
-                Double.parseDouble(inputs.get("area").toString()),
-                Double.parseDouble(inputs.get("rainfall").toString()),
-                Double.parseDouble(inputs.get("fertilizer").toString()),
+                parseDoubleValue(inputs.get("area")),
+                parseDoubleValue(inputs.get("rainfall")),
+                parseDoubleValue(inputs.get("fertilizer")),
                 (String) inputs.get("crop"),
-                Double.parseDouble(inputs.get("temperature").toString()),
-                Double.parseDouble(inputs.get("humidity").toString()),
+                parseDoubleValue(inputs.get("temperature")),
+                parseDoubleValue(inputs.get("humidity")),
                 (String) inputs.get("soil"),
                 yieldVal
         );
@@ -248,12 +283,12 @@ public class ApiController {
 
         FertilizerRecommendationRecord record = recordService.saveFertilizerRecord(
                 user,
-                Double.parseDouble(inputs.get("nitrogen").toString()),
-                Double.parseDouble(inputs.get("phosphorus").toString()),
-                Double.parseDouble(inputs.get("potassium").toString()),
-                Double.parseDouble(inputs.get("temperature").toString()),
-                Double.parseDouble(inputs.get("humidity").toString()),
-                Double.parseDouble(inputs.get("moisture").toString()),
+                parseDoubleValue(inputs.get("nitrogen")),
+                parseDoubleValue(inputs.get("phosphorus")),
+                parseDoubleValue(inputs.get("potassium")),
+                parseDoubleValue(inputs.get("temperature")),
+                parseDoubleValue(inputs.get("humidity")),
+                parseDoubleValue(inputs.get("moisture")),
                 (String) inputs.get("crop"),
                 fertilizer,
                 qty,
@@ -283,7 +318,7 @@ public class ApiController {
         }
 
         User farmer = userService.findById(userDetails.getId()).orElseThrow();
-        User vet = userService.findById(Long.parseLong(payload.get("vetId"))).orElseThrow();
+        User vet = userService.findById(parseLongValue(payload.get("vetId"))).orElseThrow();
         LocalDate date = LocalDate.parse(payload.get("date"));
         LocalTime time = LocalTime.parse(payload.get("time"));
         String disease = payload.get("disease");
@@ -295,7 +330,7 @@ public class ApiController {
 
     @PostMapping("/appointments/status")
     public ResponseEntity<?> updateAppointmentStatus(@RequestBody Map<String, String> payload) {
-        Long id = Long.parseLong(payload.get("appointmentId"));
+        Long id = parseLongValue(payload.get("appointmentId"));
         String status = payload.get("status"); // APPROVED or REJECTED
         Appointment app = appointmentService.updateStatus(id, status);
         return ResponseEntity.ok(app);
@@ -303,7 +338,7 @@ public class ApiController {
 
     @PostMapping("/appointments/diagnosis")
     public ResponseEntity<?> updateAppointmentDiagnosis(@RequestBody Map<String, Object> payload) {
-        Long id = Long.parseLong(payload.get("appointmentId").toString());
+        Long id = parseLongValue(payload.get("appointmentId"));
         String diagnosis = (String) payload.get("diagnosis");
         String medicines = (String) payload.get("medicines");
         String treatment = (String) payload.get("treatment");
@@ -332,7 +367,7 @@ public class ApiController {
 
     @PostMapping("/admin/users/status")
     public ResponseEntity<?> changeUserStatus(@RequestBody Map<String, Object> payload) {
-        Long id = Long.parseLong(payload.get("userId").toString());
+        Long id = parseLongValue(payload.get("userId"));
         boolean active = (Boolean) payload.get("active");
         User user = userService.updateUserStatus(id, active);
         return ResponseEntity.ok(user);
@@ -340,7 +375,7 @@ public class ApiController {
 
     @PostMapping("/admin/users/reset-password")
     public ResponseEntity<?> resetUserPassword(@RequestBody Map<String, String> payload) {
-        Long id = Long.parseLong(payload.get("userId"));
+        Long id = parseLongValue(payload.get("userId"));
         String newPassword = payload.get("password");
         User user = userService.resetPassword(id, newPassword);
         return ResponseEntity.ok(user);

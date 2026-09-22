@@ -1,0 +1,42 @@
+{
+    "crop_recommendation": {
+        "accuracy": 0.9986363636363637,
+        "precision": 0.9986498649864987,
+        "recall": 0.9986363636363637,
+        "f1_score": 0.9986340223243872,
+        "samples": 2200
+    },
+    "fertilizer_recommendation": {
+        "accuracy": 0.98989898989899,
+        "precision": 0.9911616161616161,
+        "recall": 0.98989898989899,
+        "f1_score": 0.9898471898471898,
+        "samples": 99
+    },
+    "yield_prediction": {
+        "r2_score": 0.7397573385518593,
+        "mae": 1.5679999999999998,
+        "rmse": 1.6308525377850682,
+        "samples": 3
+    },
+    "price_prediction": {
+        "r2_score": 0.7702631578947369,
+        "mae": 83.33333333333333,
+        "rmse": 98.48857801796105,
+        "samples": 3
+    },
+    "plant_disease": {
+        "accuracy": 0.028169014084507043,
+        "precision": 0.0013027454789589464,
+        "recall": 0.028169014084507043,
+        "f1_score": 0.0024649192895601266,
+        "samples": 142
+    },
+    "animal_disease": {
+        "accuracy": 0.38181818181818183,
+        "precision": 0.315564738292011,
+        "recall": 0.38181818181818183,
+        "f1_score": 0.32205900160445616,
+        "samples": 55
+    }
+}

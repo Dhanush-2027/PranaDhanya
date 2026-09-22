@@ -12,7 +12,6 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Service
-@SuppressWarnings("null")
 public class AppointmentService {
 
     @Autowired

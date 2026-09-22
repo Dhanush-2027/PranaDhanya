@@ -22,6 +22,10 @@ public class JwtResponse {
         return token;
     }
 
+    public String getAccessToken() {
+        return token;
+    }
+
     public void setToken(String token) {
         this.token = token;
     }
