@@ -1,8 +1,8 @@
 {
     "classes": [
         "cattle_foot_and_mouth",
-        "cattle_healthy",
         "cattle_lumpy",
+        "cattle_healthy",
         "dog_demodicosis",
         "dog_dermatitis",
         "dog_fungal_infections",
@@ -14,8 +14,8 @@
     ],
     "class_to_idx": {
         "cattle_foot_and_mouth": 0,
-        "cattle_healthy": 1,
-        "cattle_lumpy": 2,
+        "cattle_lumpy": 1,
+        "cattle_healthy": 2,
         "dog_demodicosis": 3,
         "dog_dermatitis": 4,
         "dog_fungal_infections": 5,

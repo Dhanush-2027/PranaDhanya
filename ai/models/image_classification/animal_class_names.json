@@ -1,0 +1,29 @@
+{
+    "classes": [
+        "cattle_foot_and_mouth",
+        "cattle_lumpy",
+        "cattle_healthy",
+        "dog_demodicosis",
+        "dog_dermatitis",
+        "dog_fungal_infections",
+        "dog_healthy",
+        "dog_hypersensitivity",
+        "dog_ringworm",
+        "goat_healthy",
+        "goat_unhealthy"
+    ],
+    "class_to_idx": {
+        "cattle_foot_and_mouth": 0,
+        "cattle_lumpy": 1,
+        "cattle_healthy": 2,
+        "dog_demodicosis": 3,
+        "dog_dermatitis": 4,
+        "dog_fungal_infections": 5,
+        "dog_healthy": 6,
+        "dog_hypersensitivity": 7,
+        "dog_ringworm": 8,
+        "goat_healthy": 9,
+        "goat_unhealthy": 10
+    },
+    "num_classes": 11
+}

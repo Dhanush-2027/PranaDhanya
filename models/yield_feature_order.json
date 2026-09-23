@@ -1,0 +1,13 @@
+{
+    "task": "yield_prediction",
+    "model_type": "RandomForestRegressor",
+    "feature_order": [
+        "area",
+        "rainfall",
+        "fertilizer",
+        "temperature",
+        "humidity"
+    ],
+    "target_col": "yield",
+    "categorical_encodings": {}
+}

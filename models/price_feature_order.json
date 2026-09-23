@@ -1,0 +1,11 @@
+{
+    "task": "price_prediction",
+    "model_type": "RandomForestRegressor",
+    "feature_order": [
+        "feature1",
+        "feature2",
+        "feature3"
+    ],
+    "target_col": "price",
+    "categorical_encodings": {}
+}

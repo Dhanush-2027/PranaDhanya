@@ -38,8 +38,8 @@
             "f1_score": 0.9862203221959319
         },
         "latencies": {
-            "direct_ms": 0.0828862190246582,
-            "api_ms": 18.141536712646484
+            "direct_ms": 0.0197004188190807,
+            "api_ms": 10.043115615844727
         },
         "api_match_rate": 0.98
     },
@@ -67,8 +67,8 @@
             "f1_score": 1.0
         },
         "latencies": {
-            "direct_ms": 0.2499103546142578,
-            "api_ms": 10.944092273712158
+            "direct_ms": 0.1501321792602539,
+            "api_ms": 9.399664402008057
         },
         "api_match_rate": 1.0
     },
@@ -91,8 +91,8 @@
             "r2_score": 0.845426320939335
         },
         "latencies": {
-            "direct_ms": 4.341602325439453,
-            "api_ms": 14.331738154093424
+            "direct_ms": 1.9050439198811848,
+            "api_ms": 6.900548934936523
         },
         "api_match_rate": 1.0
     },
@@ -115,8 +115,8 @@
             "r2_score": 0.8458868421052632
         },
         "latencies": {
-            "direct_ms": 2.926985422770182,
-            "api_ms": 13.657808303833008
+            "direct_ms": 2.263784408569336,
+            "api_ms": 7.747570673624675
         },
         "api_match_rate": 1.0
     },
@@ -125,8 +125,8 @@
         "classes_count": 71,
         "total_images": 113625,
         "latencies": {
-            "direct_ms": 103.22510004043579,
-            "api_ms": 197.2529172897339
+            "direct_ms": 83.58844518661499,
+            "api_ms": 225.25397539138794
         },
         "api_match_rate": 1.0
     },
@@ -135,16 +135,16 @@
         "classes_count": 11,
         "total_images": 7608,
         "latencies": {
-            "direct_ms": 78.41577529907227,
-            "api_ms": 113.79950046539307
+            "direct_ms": 205.70404529571533,
+            "api_ms": 259.952974319458
         },
         "api_match_rate": 1.0
     },
     "performance": {
-        "total_execution_time_s": 17.421037912368774,
-        "initial_memory_mb": 313.6640625,
-        "final_memory_mb": 476.72265625,
-        "memory_delta_mb": 163.05859375,
-        "cpu_percent": 403.2
+        "total_execution_time_s": 22.277851819992065,
+        "initial_memory_mb": 313.43359375,
+        "final_memory_mb": 558.1796875,
+        "memory_delta_mb": 244.74609375,
+        "cpu_percent": 0.0
     }
 }

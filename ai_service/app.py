@@ -137,9 +137,10 @@ except ImportError:
 
 # attempt to import ResNet9 for inference construction
 try:
-    from ai.models.resnet9 import ResNet9
+    from ai.models.resnet9 import ResNet9, build_resnet9_from_state_dict
 except Exception:
     ResNet9 = None
+    build_resnet9_from_state_dict = None
 
 PLANT_CHECKPOINT = None
 ANIMAL_CHECKPOINT = None
@@ -148,11 +149,15 @@ _IMAGE_MODEL_CACHE = {}
 def get_cached_resnet_model(model_key, classes, model_state):
     if model_key in _IMAGE_MODEL_CACHE:
         return _IMAGE_MODEL_CACHE[model_key]
-    if ResNet9 is None:
+    if build_resnet9_from_state_dict is not None:
+        model = build_resnet9_from_state_dict(model_state, len(classes))
+    elif ResNet9 is not None:
+        model = ResNet9(in_channels=3, num_classes=len(classes))
+        model.load_state_dict(model_state)
+        model.eval()
+    else:
         raise RuntimeError("ResNet9 model class is not available")
-    model = ResNet9(in_channels=3, num_classes=len(classes))
-    model.load_state_dict(model_state)
-    model.eval()
+        
     _IMAGE_MODEL_CACHE[model_key] = model
     return model
 
@@ -190,11 +195,11 @@ def verify_and_load_model_startup(candidates, model_name):
             raise ValueError(f"Loaded checkpoint is not a dictionary, got {type(checkpoint)}")
             
         classes = checkpoint.get('classes')
-        model_state = checkpoint.get('model_state', checkpoint)
+        model_state = checkpoint.get('model_state_dict') or checkpoint.get('model_state') or checkpoint
         
         if classes is None:
             # Attempt to resolve from json
-            for lbl in ['plant_labels.json', 'animal_labels.json', 'label_classes.json']:
+            for lbl in ['animal_class_names.json', 'plant_labels.json', 'animal_labels.json', 'label_classes.json']:
                 lbl_path = resolved_path.parent / lbl
                 if not lbl_path.exists():
                     lbl_path = Path(ROOT_DIR) / lbl
@@ -311,6 +316,8 @@ async def startup_event():
         # Verify and load Animal model
         ANIMAL_CHECKPOINT = verify_and_load_model_startup(
             [
+                'animal_disease_resnet9.pth',
+                'ai/models/image_classification/animal_disease_resnet9.pth',
                 'animal_disease_model.pth',
                 'ai/models/image_classification/animal_disease_model.pth',
                 'ai/models/image_classification/animal_resnet9_best.pt',
@@ -695,7 +702,7 @@ async def predict_animal(file: UploadFile = File(...)):
             raise HTTPException(status_code=500, detail="Animal classification model is not loaded")
             
         classes = ANIMAL_CHECKPOINT.get('classes')
-        model_state = ANIMAL_CHECKPOINT.get('model_state')
+        model_state = ANIMAL_CHECKPOINT.get('model_state_dict') or ANIMAL_CHECKPOINT.get('model_state')
         
         model_key = ANIMAL_CHECKPOINT.get('_resolved_path', 'animal_disease_model.pth')
         model = get_cached_resnet_model(model_key, classes, model_state)

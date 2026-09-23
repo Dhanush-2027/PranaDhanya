@@ -10,7 +10,7 @@ import numpy as np
 from pathlib import Path
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, r2_score, mean_absolute_error, mean_squared_error
 import requests
-from ai.models.resnet9 import ResNet9
+from ai.models.resnet9 import ResNet9, build_resnet9_from_state_dict
 
 class RequestsClient:
     def post(self, path, json=None, files=None):
@@ -442,8 +442,7 @@ def evaluate_image_models():
             print(f"Plant Disease dataset has {len(images)} images, {len(classes)} classes")
             
             # Build and load model
-            model = ResNet9(in_channels=3, num_classes=len(classes))
-            model.load_state_dict(model_state)
+            model = build_resnet9_from_state_dict(model_state, len(classes))
             model.eval()
             
             # Run evaluations on up to 20 samples
@@ -511,14 +510,19 @@ def evaluate_image_models():
             print(f"Error evaluating plant ResNet9: {e}")
             
     # 2. Animal Disease ResNet9
-    animal_model_path = Path("ai/models/image_classification/animal_resnet9_best.pt")
+    animal_candidates = [
+        Path("ai/models/image_classification/animal_disease_resnet9.pth"),
+        Path("ai/models/image_classification/animal_disease_model.pth"),
+        Path("ai/models/image_classification/animal_resnet9_best.pt")
+    ]
+    animal_model_path = next((p for p in animal_candidates if p.exists()), None)
     
     animal_res = None
-    if animal_model_path.exists():
+    if animal_model_path and animal_model_path.exists():
         try:
             checkpoint = torch.load(animal_model_path, map_location="cpu", weights_only=False)
-            classes = checkpoint['classes']
-            model_state = checkpoint['model_state']
+            classes = checkpoint.get('classes', [])
+            model_state = checkpoint.get('model_state_dict') or checkpoint.get('model_state') or checkpoint
             
             # Walk through animal directories to find images
             cattle_path = Path("datasets/cattle_diseases")
@@ -532,8 +536,7 @@ def evaluate_image_models():
             
             print(f"Animal Disease dataset has {len(images)} images, {len(classes)} classes")
             
-            model = ResNet9(in_channels=3, num_classes=len(classes))
-            model.load_state_dict(model_state)
+            model = build_resnet9_from_state_dict(model_state, len(classes))
             model.eval()
             
             test_samples = images[:20]

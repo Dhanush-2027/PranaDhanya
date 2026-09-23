@@ -283,14 +283,16 @@ def load_image_model(path='ai/models/image_classification/plant_disease_model.pt
             path,
             filename,
             f"ai/models/image_classification/{filename}",
-            'ai/models/image_classification/plant_disease_model.pth',
-            'plant_disease_model.pth',
+            'ai/models/image_classification/animal_disease_resnet9.pth',
+            'animal_disease_resnet9.pth',
             'ai/models/image_classification/animal_disease_model.pth',
             'animal_disease_model.pth',
-            'ai/models/image_classification/plant_resnet9_best.pt',
+            'ai/models/image_classification/plant_disease_model.pth',
+            'plant_disease_model.pth',
             'ai/models/image_classification/animal_resnet9_best.pt',
-            'ai/models/image_classification/plant_resnet9.pt',
-            'ai/models/image_classification/animal_resnet9.pt'
+            'ai/models/image_classification/plant_resnet9_best.pt',
+            'ai/models/image_classification/animal_resnet9.pt',
+            'ai/models/image_classification/plant_resnet9.pt'
         ]
         for cand in candidates:
             cand_res = _resolve_path(cand)
@@ -338,23 +340,23 @@ def load_image_model(path='ai/models/image_classification/plant_disease_model.pt
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
     checkpoint = torch.load(resolved_path, map_location=device, weights_only=False)
     
-    # If checkpoint is a raw state_dict without classes metadata, attempt loading accompanying labels.json
-    if isinstance(checkpoint, dict) and 'classes' not in checkpoint:
-        # Check for matching labels.json or plant_labels.json / animal_labels.json
-        parent = resolved_path.parent
-        if 'plant' in resolved_path.stem.lower():
-            labels = load_labels('plant_labels.json')
-        elif 'animal' in resolved_path.stem.lower() or 'livestock' in resolved_path.stem.lower():
-            labels = load_labels('animal_labels.json')
-        else:
-            labels = load_labels(parent / 'labels.json')
+    # Normalize dictionary structure
+    if isinstance(checkpoint, dict):
+        if 'model_state' not in checkpoint and 'model_state_dict' in checkpoint:
+            checkpoint['model_state'] = checkpoint['model_state_dict']
             
-        if labels:
-            return {
-                'model_state': checkpoint.get('model_state', checkpoint),
-                'classes': labels
-            }
-            
+        if 'classes' not in checkpoint:
+            parent = resolved_path.parent
+            if 'plant' in resolved_path.stem.lower():
+                labels = load_labels('plant_labels.json')
+            elif 'animal' in resolved_path.stem.lower() or 'livestock' in resolved_path.stem.lower():
+                labels = load_labels('animal_labels.json') or load_labels('animal_class_names.json')
+            else:
+                labels = load_labels(parent / 'labels.json')
+                
+            if labels:
+                checkpoint['classes'] = labels
+                
     return checkpoint
 
 
@@ -363,4 +365,4 @@ def load_plant_disease_model(device=None):
 
 
 def load_animal_disease_model(device=None):
-    return load_image_model('ai/models/image_classification/animal_disease_model.pth', device=device)
+    return load_image_model('ai/models/image_classification/animal_disease_resnet9.pth', device=device)

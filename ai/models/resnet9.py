@@ -1,20 +1,5 @@
 """
-ResNet9 Architecture with Residual Connections
-======================================================
-Custom lightweight 9-layer ResNet CNN for image classification.
-Follows the canonical architecture:
-    ConvBlock -> ConvBlock + Residual -> ConvBlock -> ConvBlock + Residual -> Classifier
-
-Parametric Layers:
-1. Prep Conv: Conv2d(3, c)
-2. Layer 1:   Conv2d(c, 2*c) + MaxPool2d(2)
-3. ResBlock1: Conv2d(2*c, 2*c)
-4. ResBlock1: Conv2d(2*c, 2*c)
-5. Layer 2:   Conv2d(2*c, 4*c) + MaxPool2d(2)
-6. Layer 3:   Conv2d(4*c, 8*c) + MaxPool2d(2)
-7. ResBlock2: Conv2d(8*c, 8*c)
-8. ResBlock2: Conv2d(8*c, 8*c)
-9. Linear:    Linear(8*c, num_classes)
+ResNet9 Architecture with Adaptive Support for 32/64-channel & Sequential/Named Residual Blocks
 """
 
 import torch
@@ -35,8 +20,8 @@ def conv_block(in_channels: int, out_channels: int, pool: bool = False, pool_siz
     return nn.Sequential(*layers)
 
 
-class ResidualBlock(nn.Module):
-    """Residual block with two 3x3 convolutions, batch normalization, and skip connection."""
+class LegacyResidualBlock(nn.Module):
+    """Residual block with named conv1/conv2 sub-layers for legacy weights."""
     def __init__(self, channels: int, dropout: float = 0.0) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False)
@@ -51,89 +36,78 @@ class ResidualBlock(nn.Module):
         out = self.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         out = self.dropout(out)
-        out = self.relu(out + residual)
-        return out
-
-
-# Alias for backward compatibility
-BasicBlock = ResidualBlock
+        return self.relu(out + residual)
 
 
 class ResNet9(nn.Module):
     """
-    ResNet9 - Canonical 9-layer Deep Residual Neural Network.
-    
-    Structure:
-        Input (3xHxW, e.g. 3x64x64, 3x112x112, 3x224x224)
-            ↓
-        Prep Conv (3 → c)
-            ↓
-        Layer 1 Conv (c → 2c, MaxPool /2)
-            ↓
-        ResBlock 1 (2c → 2c, 2 Convs + Skip)
-            ↓
-        Layer 2 Conv (2c → 4c, MaxPool /2)
-            ↓
-        Layer 3 Conv (4c → 8c, MaxPool /2)
-            ↓
-        ResBlock 2 (8c → 8c, 2 Convs + Skip)
-            ↓
-        Global Average Pooling (AdaptiveAvgPool2d(1, 1))
-            ↓
-        Dropout(0.2) + Linear Classifier (8c → num_classes)
+    ResNet9 Architecture supporting both standard 64-channel and legacy 32-channel weights.
     """
 
-    def __init__(self, in_channels: int = 3, num_classes: int = 10, base_channels: int = 32, dropout: float = 0.2) -> None:
+    def __init__(
+        self,
+        in_channels: int = 3,
+        num_classes: int = 11,
+        base_channels: int = 64,
+        dropout: float = 0.2,
+        legacy_mode: bool = False
+    ) -> None:
         super().__init__()
         
         self.in_channels = in_channels
         self.num_classes = num_classes
         c = base_channels
         self.base_channels = c
+        self.legacy_mode = legacy_mode
         
-        # 1. Prep layer (Layer 1)
+        # 1. Prep layer
         self.prep = conv_block(in_channels, c, pool=False)
         
-        # 2. Stage 1: Conv(c->2c, pool) (Layer 2) + Residual(2c) (Layers 3 & 4)
+        # 2. Stage 1: Conv(c->2c, pool) + Residual(2c)
         self.layer1 = conv_block(c, c * 2, pool=True)
-        self.res1 = ResidualBlock(c * 2, dropout=dropout)
+        if legacy_mode:
+            self.res1 = LegacyResidualBlock(c * 2, dropout=dropout)
+        else:
+            self.res1 = nn.Sequential(
+                conv_block(c * 2, c * 2),
+                conv_block(c * 2, c * 2)
+            )
         
-        # 3. Stage 2: Conv(2c->4c, pool) (Layer 5)
+        # 3. Stage 2: Conv(2c->4c, pool)
         self.layer2 = conv_block(c * 2, c * 4, pool=True)
         
-        # 4. Stage 3: Conv(4c->8c, pool) (Layer 6) + Residual(8c) (Layers 7 & 8)
+        # 4. Stage 3: Conv(4c->8c, pool) + Residual(8c)
         self.layer3 = conv_block(c * 4, c * 8, pool=True)
-        self.res2 = ResidualBlock(c * 8, dropout=dropout)
+        if legacy_mode:
+            self.res2 = LegacyResidualBlock(c * 8, dropout=dropout)
+        else:
+            self.res2 = nn.Sequential(
+                conv_block(c * 8, c * 8),
+                conv_block(c * 8, c * 8)
+            )
         
-        # 5. Classifier Head (Layer 9)
-        self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        # 5. Classifier Head
+        if legacy_mode:
+            self.pool = nn.AdaptiveAvgPool2d((1, 1))
+        else:
+            self.pool = nn.AdaptiveMaxPool2d((1, 1))
+            
         self.dropout = nn.Dropout(p=dropout)
         self.classifier = nn.Linear(c * 8, num_classes)
-        
-        # Initialize weights
-        self._initialize_weights()
-
-    def _initialize_weights(self) -> None:
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, mean=0.0, std=0.01)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.prep(x)
         out = self.layer1(out)
-        out = self.res1(out)
+        if self.legacy_mode:
+            out = self.res1(out)
+        else:
+            out = out + self.res1(out)
         out = self.layer2(out)
         out = self.layer3(out)
-        out = self.res2(out)
+        if self.legacy_mode:
+            out = self.res2(out)
+        else:
+            out = out + self.res2(out)
         out = self.pool(out)
         out = torch.flatten(out, 1)
         out = self.dropout(out)
@@ -141,6 +115,23 @@ class ResNet9(nn.Module):
         return out
 
 
-def count_parameters(model: nn.Module) -> int:
-    """Returns the total number of trainable parameters in the model."""
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+def build_resnet9_from_state_dict(state_dict, num_classes):
+    """
+    Intelligently inspects state_dict keys and dimensions to instantiate the exact matching ResNet9 variant.
+    """
+    # Detect base channels from prep layer
+    prep_weight = state_dict.get('prep.0.weight', None)
+    base_channels = prep_weight.shape[0] if prep_weight is not None else 64
+    
+    # Detect legacy vs modern block naming
+    legacy_mode = any('res1.conv1' in k for k in state_dict.keys())
+    
+    model = ResNet9(
+        in_channels=3,
+        num_classes=num_classes,
+        base_channels=base_channels,
+        legacy_mode=legacy_mode
+    )
+    model.load_state_dict(state_dict)
+    model.eval()
+    return model
