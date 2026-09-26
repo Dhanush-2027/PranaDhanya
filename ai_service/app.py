@@ -222,9 +222,15 @@ def verify_and_load_model_startup(candidates, model_name):
                     with open(lbl_path, 'r', encoding='utf-8') as f:
                         data = json.load(f)
                         classes = data.get('classes', data) if isinstance(data, dict) else data
-                        checkpoint['classes'] = classes
                         break
                         
+        if isinstance(classes, dict):
+            try:
+                sorted_keys = sorted(classes.keys(), key=lambda x: int(x))
+                classes = [classes[k] for k in sorted_keys]
+            except Exception:
+                classes = list(classes.values())
+                
         if classes is None or model_state is None:
             raise ValueError("Checkpoint does not contain 'classes' or 'model_state'")
         
@@ -234,8 +240,13 @@ def verify_and_load_model_startup(candidates, model_name):
         
         # Pre-cache model in memory
         get_cached_resnet_model(str(resolved_path), classes, model_state)
-        checkpoint['_resolved_path'] = str(resolved_path)
-        return checkpoint
+        
+        result_checkpoint = {
+            'classes': classes,
+            'model_state': model_state,
+            '_resolved_path': str(resolved_path)
+        }
+        return result_checkpoint
     except Exception as e:
         print(f"ERROR: Failed to load {model_name}: {e}", flush=True)
         sys.exit(1)

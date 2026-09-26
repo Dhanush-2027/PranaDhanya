@@ -448,18 +448,38 @@ def evaluate_image_models():
         Path("ai/models/image_classification/plant_disease_model.pth"),
         Path("ai/models/image_classification/plant_resnet9_best.pt"),
         Path("ai/models/image_classification/plant_resnet9_best.pth"),
-        Path("ai/models/image_classification/plant_disease_model_final.pth")
+        Path("ai/models/image_classification/plant_disease_model_final.pth"),
+        Path("plant_disease_model_final.pth"),
+        Path("plant_disease_model.pth")
     ]
     plant_model_path = next((p for p in plant_candidates if p.exists()), None)
-    plant_dataset_path = Path("datasets/plant_disease/data")
+    plant_dataset_candidates = [
+        Path("datasets/plant_disease/data"),
+        Path("datasets/plant_disease"),
+        Path("datasets/PlantVillage")
+    ]
+    plant_dataset_path = next((p for p in plant_dataset_candidates if p.exists()), None)
     
     plant_res = None
-    if plant_model_path and plant_model_path.exists() and plant_dataset_path.exists():
+    if plant_model_path and plant_model_path.exists() and plant_dataset_path and plant_dataset_path.exists():
         try:
             checkpoint = torch.load(plant_model_path, map_location="cpu", weights_only=False)
-            classes = checkpoint.get('classes', [])
+            classes = checkpoint.get('classes', []) if isinstance(checkpoint, dict) else []
             model_state = checkpoint.get('model_state_dict') or checkpoint.get('model_state') or checkpoint
             
+            if not classes:
+                for lbl in ["plant_labels.json", "plant_class_names.json", "ai/models/image_classification/plant_class_names.json"]:
+                    lbl_p = Path(lbl)
+                    if lbl_p.exists():
+                        with open(lbl_p, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                            if isinstance(data, dict):
+                                sorted_keys = sorted(data.keys(), key=lambda x: int(x) if x.isdigit() else x)
+                                classes = [data[k] for k in sorted_keys]
+                            else:
+                                classes = data
+                        break
+                        
             # Simple test sample creation or finding a leaf image
             images = list(plant_dataset_path.rglob("*.jpg")) + list(plant_dataset_path.rglob("*.png"))
             print(f"Plant Disease dataset has {len(images)} images, {len(classes)} classes")

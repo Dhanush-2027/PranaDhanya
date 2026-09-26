@@ -38,8 +38,8 @@
             "f1_score": 0.9862203221959319
         },
         "latencies": {
-            "direct_ms": 0.026165897195989437,
-            "api_ms": 15.508623123168945
+            "direct_ms": 0.018896297975019974,
+            "api_ms": 10.192208290100098
         },
         "api_match_rate": 0.98
     },
@@ -67,8 +67,8 @@
             "f1_score": 1.0
         },
         "latencies": {
-            "direct_ms": 0.30515193939208984,
-            "api_ms": 14.333367347717285
+            "direct_ms": 0.17780065536499023,
+            "api_ms": 9.64442491531372
         },
         "api_match_rate": 1.0
     },
@@ -91,8 +91,8 @@
             "r2_score": 0.845426320939335
         },
         "latencies": {
-            "direct_ms": 3.8859049479166665,
-            "api_ms": 15.22517204284668
+            "direct_ms": 2.0739237467447915,
+            "api_ms": 13.14838727315267
         },
         "api_match_rate": 1.0
     },
@@ -115,18 +115,18 @@
             "r2_score": 0.8458868421052632
         },
         "latencies": {
-            "direct_ms": 2.047379811604818,
-            "api_ms": 11.852582295735678
+            "direct_ms": 0.9983380635579426,
+            "api_ms": 7.106463114420573
         },
         "api_match_rate": 1.0
     },
     "plant_disease": {
         "model_name": "Plant Disease Detection (ResNet9 CNN)",
-        "classes_count": 71,
+        "classes_count": 38,
         "total_images": 113625,
         "latencies": {
-            "direct_ms": 311.67094707489014,
-            "api_ms": 368.3066725730896
+            "direct_ms": 230.9502363204956,
+            "api_ms": 263.508939743042
         },
         "api_match_rate": 1.0
     },
@@ -135,16 +135,16 @@
         "classes_count": 11,
         "total_images": 7608,
         "latencies": {
-            "direct_ms": 295.6379294395447,
-            "api_ms": 436.62006855010986
+            "direct_ms": 184.69847440719604,
+            "api_ms": 273.0877757072449
         },
         "api_match_rate": 1.0
     },
     "performance": {
-        "total_execution_time_s": 36.47496938705444,
-        "initial_memory_mb": 429.078125,
-        "final_memory_mb": 712.69921875,
-        "memory_delta_mb": 283.62109375,
-        "cpu_percent": 930.9
+        "total_execution_time_s": 23.76643466949463,
+        "initial_memory_mb": 427.91015625,
+        "final_memory_mb": 709.45703125,
+        "memory_delta_mb": 281.546875,
+        "cpu_percent": 731.1
     }
 }

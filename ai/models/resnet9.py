@@ -115,16 +115,37 @@ class ResNet9(nn.Module):
         return out
 
 
-def build_resnet9_from_state_dict(state_dict, num_classes):
+def build_resnet9_from_state_dict(state_dict, num_classes=None):
     """
     Intelligently inspects state_dict keys and dimensions to instantiate the exact matching ResNet9 variant.
     """
+    if isinstance(state_dict, dict):
+        if 'model_state_dict' in state_dict:
+            state_dict = state_dict['model_state_dict']
+        elif 'model_state' in state_dict:
+            state_dict = state_dict['model_state']
+            
+    # Filter out any non-parameter metadata keys (e.g. 'classes', 'epoch')
+    clean_state_dict = {
+        k: v for k, v in state_dict.items()
+        if isinstance(v, torch.Tensor)
+    }
+
     # Detect base channels from prep layer
-    prep_weight = state_dict.get('prep.0.weight', None)
+    prep_weight = clean_state_dict.get('prep.0.weight', None)
     base_channels = prep_weight.shape[0] if prep_weight is not None else 64
     
     # Detect legacy vs modern block naming
-    legacy_mode = any('res1.conv1' in k for k in state_dict.keys())
+    legacy_mode = any('res1.conv1' in k for k in clean_state_dict.keys())
+    
+    # Detect num_classes from classifier weight if not explicitly provided or mismatch
+    classifier_weight = clean_state_dict.get('classifier.weight', None)
+    if classifier_weight is not None:
+        detected_classes = classifier_weight.shape[0]
+        if num_classes is None or num_classes != detected_classes:
+            num_classes = detected_classes
+    elif num_classes is None:
+        num_classes = 38
     
     model = ResNet9(
         in_channels=3,
@@ -132,6 +153,6 @@ def build_resnet9_from_state_dict(state_dict, num_classes):
         base_channels=base_channels,
         legacy_mode=legacy_mode
     )
-    model.load_state_dict(state_dict)
+    model.load_state_dict(clean_state_dict)
     model.eval()
     return model
