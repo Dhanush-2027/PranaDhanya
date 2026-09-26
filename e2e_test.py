@@ -12,13 +12,29 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support, r2_
 import requests
 from ai.models.resnet9 import ResNet9, build_resnet9_from_state_dict
 
+import threading
+import uvicorn
+
+# Start background server if port 8000 is not live
+def ensure_server_running():
+    try:
+        r = requests.get("http://127.0.0.1:8000/api/health", timeout=0.5)
+    except Exception:
+        from ai_service.app import app
+        t = threading.Thread(
+            target=uvicorn.run,
+            args=(app,),
+            kwargs={"host": "127.0.0.1", "port": 8000, "log_level": "warning"},
+            daemon=True
+        )
+        t.start()
+        time.sleep(3)
+
+ensure_server_running()
+
 class RequestsClient:
     def post(self, path, json=None, files=None):
         if files:
-            # files is a dict like {"file": (filename, file_obj, content_type)}
-            # requests expects files in a similar structure but we need to pass the actual bytes/file
-            # In e2e_test.py: files={"file": (img_path.name, f, "image/jpeg")}
-            # requests handles this perfectly!
             return requests.post(f"http://127.0.0.1:8000{path}", files=files)
         return requests.post(f"http://127.0.0.1:8000{path}", json=json)
 
@@ -427,15 +443,22 @@ def evaluate_image_models():
     print("\n--- Evaluating Image Classification Models ---")
     
     # 1. Plant Disease ResNet9
-    plant_model_path = Path("ai/models/image_classification/plant_resnet9_best.pt")
+    plant_candidates = [
+        Path("ai/models/image_classification/plant_disease_resnet9.pth"),
+        Path("ai/models/image_classification/plant_disease_model.pth"),
+        Path("ai/models/image_classification/plant_resnet9_best.pt"),
+        Path("ai/models/image_classification/plant_resnet9_best.pth"),
+        Path("ai/models/image_classification/plant_disease_model_final.pth")
+    ]
+    plant_model_path = next((p for p in plant_candidates if p.exists()), None)
     plant_dataset_path = Path("datasets/plant_disease/data")
     
     plant_res = None
-    if plant_model_path.exists() and plant_dataset_path.exists():
+    if plant_model_path and plant_model_path.exists() and plant_dataset_path.exists():
         try:
             checkpoint = torch.load(plant_model_path, map_location="cpu", weights_only=False)
-            classes = checkpoint['classes']
-            model_state = checkpoint['model_state']
+            classes = checkpoint.get('classes', [])
+            model_state = checkpoint.get('model_state_dict') or checkpoint.get('model_state') or checkpoint
             
             # Simple test sample creation or finding a leaf image
             images = list(plant_dataset_path.rglob("*.jpg")) + list(plant_dataset_path.rglob("*.png"))
@@ -453,7 +476,7 @@ def evaluate_image_models():
             
             from torchvision import transforms
             transform = transforms.Compose([
-                transforms.Resize((224, 224)),
+                transforms.Resize((256, 256)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])

@@ -9,25 +9,25 @@
             "class_distribution": {
                 "rice": 100,
                 "maize": 100,
-                "chickpea": 100,
-                "kidneybeans": 100,
-                "pigeonpeas": 100,
-                "mothbeans": 100,
-                "mungbean": 100,
-                "blackgram": 100,
-                "lentil": 100,
-                "pomegranate": 100,
-                "banana": 100,
-                "mango": 100,
-                "grapes": 100,
-                "watermelon": 100,
-                "muskmelon": 100,
-                "apple": 100,
-                "orange": 100,
-                "papaya": 100,
-                "coconut": 100,
-                "cotton": 100,
                 "jute": 100,
+                "cotton": 100,
+                "coconut": 100,
+                "papaya": 100,
+                "orange": 100,
+                "apple": 100,
+                "muskmelon": 100,
+                "watermelon": 100,
+                "grapes": 100,
+                "mango": 100,
+                "banana": 100,
+                "pomegranate": 100,
+                "lentil": 100,
+                "blackgram": 100,
+                "mungbean": 100,
+                "mothbeans": 100,
+                "pigeonpeas": 100,
+                "kidneybeans": 100,
+                "chickpea": 100,
                 "coffee": 100
             }
         },
@@ -38,8 +38,8 @@
             "f1_score": 0.9862203221959319
         },
         "latencies": {
-            "direct_ms": 0.0197004188190807,
-            "api_ms": 10.043115615844727
+            "direct_ms": 0.026165897195989437,
+            "api_ms": 15.508623123168945
         },
         "api_match_rate": 0.98
     },
@@ -67,8 +67,8 @@
             "f1_score": 1.0
         },
         "latencies": {
-            "direct_ms": 0.1501321792602539,
-            "api_ms": 9.399664402008057
+            "direct_ms": 0.30515193939208984,
+            "api_ms": 14.333367347717285
         },
         "api_match_rate": 1.0
     },
@@ -91,8 +91,8 @@
             "r2_score": 0.845426320939335
         },
         "latencies": {
-            "direct_ms": 1.9050439198811848,
-            "api_ms": 6.900548934936523
+            "direct_ms": 3.8859049479166665,
+            "api_ms": 15.22517204284668
         },
         "api_match_rate": 1.0
     },
@@ -115,8 +115,8 @@
             "r2_score": 0.8458868421052632
         },
         "latencies": {
-            "direct_ms": 2.263784408569336,
-            "api_ms": 7.747570673624675
+            "direct_ms": 2.047379811604818,
+            "api_ms": 11.852582295735678
         },
         "api_match_rate": 1.0
     },
@@ -125,8 +125,8 @@
         "classes_count": 71,
         "total_images": 113625,
         "latencies": {
-            "direct_ms": 83.58844518661499,
-            "api_ms": 225.25397539138794
+            "direct_ms": 311.67094707489014,
+            "api_ms": 368.3066725730896
         },
         "api_match_rate": 1.0
     },
@@ -135,16 +135,16 @@
         "classes_count": 11,
         "total_images": 7608,
         "latencies": {
-            "direct_ms": 205.70404529571533,
-            "api_ms": 259.952974319458
+            "direct_ms": 295.6379294395447,
+            "api_ms": 436.62006855010986
         },
         "api_match_rate": 1.0
     },
     "performance": {
-        "total_execution_time_s": 22.277851819992065,
-        "initial_memory_mb": 313.43359375,
-        "final_memory_mb": 558.1796875,
-        "memory_delta_mb": 244.74609375,
-        "cpu_percent": 0.0
+        "total_execution_time_s": 36.47496938705444,
+        "initial_memory_mb": 429.078125,
+        "final_memory_mb": 712.69921875,
+        "memory_delta_mb": 283.62109375,
+        "cpu_percent": 930.9
     }
 }

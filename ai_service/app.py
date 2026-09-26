@@ -42,12 +42,27 @@ def get_transforms():
         return None
 
 
-def get_image_inference_transform():
+def get_image_inference_transform(img_size=None):
     transforms = get_transforms()
     if transforms is None:
         return None
+    
+    if img_size is None:
+        # Check preprocessing_config.json
+        cfg_path = Path(ROOT_DIR) / "ai/models/image_classification/preprocessing_config.json"
+        if cfg_path.exists():
+            try:
+                with open(cfg_path, 'r', encoding='utf-8') as f:
+                    cfg = json.load(f)
+                    if "image_size" in cfg:
+                        img_size = tuple(cfg["image_size"])
+            except Exception:
+                img_size = (256, 256)
+        else:
+            img_size = (256, 256)
+            
     return transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize(img_size),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406],
