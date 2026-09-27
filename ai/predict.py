@@ -157,18 +157,23 @@ def predict_image(model_dir, image_path_or_bytes):
     # 1. Check for PyTorch checkpoints first
     pt_candidates = [
         model_path if model_path.suffix in ['.pth', '.pt'] else None,
+        model_path / "plant-disease-resnet9.pth",
+        model_path / "best_model.pth",
         model_path / "plant_disease_model.pth",
+        model_path / "animal_disease_resnet9.pth",
         model_path / "animal_disease_model.pth",
         model_path / "plant_resnet9_best.pt",
         model_path / "animal_resnet9_best.pt",
         model_path / "model.pth",
         model_path / "model.pt",
+        Path(r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\plant-disease-resnet9.pth"),
+        Path(r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\best_model.pth"),
     ]
     pt_candidates = [p for p in pt_candidates if p is not None and p.exists()]
     
     if len(pt_candidates) > 0:
         import torch
-        from ai.models.resnet9 import ResNet9
+        from ai.models.resnet9 import ResNet9, build_resnet9_from_state_dict
         
         target_pt = pt_candidates[0]
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -179,17 +184,30 @@ def predict_image(model_dir, image_path_or_bytes):
         if isinstance(checkpoint, dict) and 'classes' in checkpoint:
             label_classes = checkpoint['classes']
         else:
-            for lbl_name in ['plant_labels.json', 'animal_labels.json', 'label_classes.json', 'labels.json']:
-                lbl_file = (model_path if model_path.is_dir() else model_path.parent) / lbl_name
-                if lbl_file.exists():
-                    with open(lbl_file, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        label_classes = data.get('classes', data) if isinstance(data, dict) else data
+            search_dirs = [model_path if model_path.is_dir() else model_path.parent, Path("ai/models/image_classification"), Path(r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj")]
+            for sdir in search_dirs:
+                for lbl_name in ['class_mapping.json', 'plant_labels.json', 'plant_classes.json', 'animal_labels.json', 'animal_class_names.json', 'label_classes.json', 'labels.json']:
+                    lbl_file = sdir / lbl_name
+                    if lbl_file.exists():
+                        try:
+                            with open(lbl_file, 'r', encoding='utf-8') as f:
+                                data = json.load(f)
+                                if isinstance(data, dict) and "class_to_idx" in data:
+                                    c2i = data["class_to_idx"]
+                                    label_classes = [k for k, v in sorted(c2i.items(), key=lambda x: x[1])]
+                                elif isinstance(data, dict) and "classes" in data:
+                                    label_classes = data["classes"]
+                                elif isinstance(data, list):
+                                    label_classes = data
+                            if label_classes:
+                                break
+                        except Exception:
+                            pass
+                if label_classes:
                     break
                     
-        model_state = checkpoint.get('model_state', checkpoint) if isinstance(checkpoint, dict) else checkpoint
-        model = ResNet9(in_channels=3, num_classes=len(label_classes))
-        model.load_state_dict(model_state)
+        model_state = checkpoint.get('model_state', checkpoint.get('model_state_dict', checkpoint)) if isinstance(checkpoint, dict) else checkpoint
+        model = build_resnet9_from_state_dict(model_state, len(label_classes))
         model.to(device)
         model.eval()
         

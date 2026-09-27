@@ -260,14 +260,26 @@ def load_fertilizer_metadata(dir_path='ai/models/fertilizer_recommendation'):
 def load_labels(path='plant_labels.json'):
     resolved = _resolve_path(path)
     if not resolved or not resolved.exists():
-        fallback = _resolve_path(f"ai/models/image_classification/{path}")
-        if fallback and fallback.exists():
-            resolved = fallback
+        fallback_names = [
+            f"ai/models/image_classification/{path}",
+            "ai/models/image_classification/class_mapping.json",
+            "class_mapping.json",
+            r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\class_mapping.json"
+        ]
+        for fb in fallback_names:
+            cand = _resolve_path(fb)
+            if cand and cand.exists():
+                resolved = cand
+                break
+
     if resolved and resolved.exists():
         with open(resolved, 'r', encoding='utf-8') as f:
             data = json.load(f)
             if isinstance(data, dict) and "classes" in data:
                 return data["classes"]
+            elif isinstance(data, dict) and "class_to_idx" in data:
+                c2i = data["class_to_idx"]
+                return [k for k, v in sorted(c2i.items(), key=lambda x: x[1])]
             elif isinstance(data, list):
                 return data
     return None
@@ -282,13 +294,20 @@ def load_image_model(path='ai/models/image_classification/plant_disease_model.pt
         candidates = [
             path,
             filename,
+            rf"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\{filename}",
+            r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\best_model.pth",
+            r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\plant-disease-resnet9.pth",
             f"ai/models/image_classification/{filename}",
+            'ai/models/image_classification/plant-disease-resnet9.pth',
+            'plant-disease-resnet9.pth',
+            'ai/models/image_classification/best_model.pth',
+            'best_model.pth',
+            'ai/models/image_classification/plant_disease_model.pth',
+            'plant_disease_model.pth',
             'ai/models/image_classification/animal_disease_resnet9.pth',
             'animal_disease_resnet9.pth',
             'ai/models/image_classification/animal_disease_model.pth',
             'animal_disease_model.pth',
-            'ai/models/image_classification/plant_disease_model.pth',
-            'plant_disease_model.pth',
             'ai/models/image_classification/animal_resnet9_best.pt',
             'ai/models/image_classification/plant_resnet9_best.pt',
             'ai/models/image_classification/animal_resnet9.pt',
@@ -347,12 +366,12 @@ def load_image_model(path='ai/models/image_classification/plant_disease_model.pt
             
         if 'classes' not in checkpoint:
             parent = resolved_path.parent
-            if 'plant' in resolved_path.stem.lower():
-                labels = load_labels('plant_labels.json')
+            if 'plant' in resolved_path.stem.lower() or 'best_model' in resolved_path.stem.lower():
+                labels = load_labels('class_mapping.json') or load_labels('plant_labels.json')
             elif 'animal' in resolved_path.stem.lower() or 'livestock' in resolved_path.stem.lower():
                 labels = load_labels('animal_labels.json') or load_labels('animal_class_names.json')
             else:
-                labels = load_labels(parent / 'labels.json')
+                labels = load_labels(parent / 'labels.json') or load_labels('class_mapping.json')
                 
             if labels:
                 checkpoint['classes'] = labels
@@ -361,7 +380,7 @@ def load_image_model(path='ai/models/image_classification/plant_disease_model.pt
 
 
 def load_plant_disease_model(device=None):
-    return load_image_model('ai/models/image_classification/plant_disease_model.pth', device=device)
+    return load_image_model('ai/models/image_classification/plant-disease-resnet9.pth', device=device)
 
 
 def load_animal_disease_model(device=None):

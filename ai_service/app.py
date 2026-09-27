@@ -47,28 +47,41 @@ def get_image_inference_transform(img_size=None):
     if transforms is None:
         return None
     
-    if img_size is None:
-        # Check preprocessing_config.json
-        cfg_path = Path(ROOT_DIR) / "ai/models/image_classification/preprocessing_config.json"
+    norm_mean = [0.485, 0.456, 0.406]
+    norm_std = [0.229, 0.224, 0.225]
+    
+    # Check preprocessing_config.json candidates
+    config_candidates = [
+        Path(ROOT_DIR) / "ai/models/image_classification/preprocessing_config.json",
+        Path(ROOT_DIR) / "preprocessing_config.json",
+        Path(r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\preprocessing_config.json")
+    ]
+    for cfg_path in config_candidates:
         if cfg_path.exists():
             try:
                 with open(cfg_path, 'r', encoding='utf-8') as f:
                     cfg = json.load(f)
-                    if "image_size" in cfg:
+                    if img_size is None and "image_size" in cfg:
                         img_size = tuple(cfg["image_size"])
+                    if "normalization_mean" in cfg:
+                        norm_mean = cfg["normalization_mean"]
+                    if "normalization_std" in cfg:
+                        norm_std = cfg["normalization_std"]
+                break
             except Exception:
-                img_size = (256, 256)
-        else:
-            img_size = (256, 256)
-            
-    return transforms.Compose([
+                pass
+
+    if img_size is None:
+        img_size = (256, 256)
+        
+    transform_list = [
         transforms.Resize(img_size),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        )
-    ])
+        transforms.ToTensor()
+    ]
+    if norm_mean is not None and norm_std is not None:
+        transform_list.append(transforms.Normalize(mean=norm_mean, std=norm_std))
+        
+    return transforms.Compose(transform_list)
 
 
 def load_image_checkpoint(candidates):
@@ -213,16 +226,36 @@ def verify_and_load_model_startup(candidates, model_name):
         model_state = checkpoint.get('model_state_dict') or checkpoint.get('model_state') or checkpoint
         
         if classes is None:
-            # Attempt to resolve from json
-            for lbl in ['animal_class_names.json', 'plant_labels.json', 'animal_labels.json', 'label_classes.json']:
-                lbl_path = resolved_path.parent / lbl
-                if not lbl_path.exists():
-                    lbl_path = Path(ROOT_DIR) / lbl
+            # Attempt to resolve from json candidates
+            lbl_candidates = [
+                resolved_path.parent / 'class_mapping.json',
+                resolved_path.parent / 'plant_labels.json',
+                resolved_path.parent / 'plant_classes.json',
+                resolved_path.parent / 'plant_class_names.json',
+                resolved_path.parent / 'animal_class_names.json',
+                resolved_path.parent / 'animal_labels.json',
+                resolved_path.parent / 'label_classes.json',
+                Path(ROOT_DIR) / 'ai/models/image_classification/class_mapping.json',
+                Path(ROOT_DIR) / 'ai/models/image_classification/plant_labels.json',
+                Path(ROOT_DIR) / 'plant_labels.json',
+                Path(r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\class_mapping.json")
+            ]
+            for lbl_path in lbl_candidates:
                 if lbl_path.exists():
-                    with open(lbl_path, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        classes = data.get('classes', data) if isinstance(data, dict) else data
-                        break
+                    try:
+                        with open(lbl_path, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            if isinstance(data, dict) and "class_to_idx" in data:
+                                c2i = data["class_to_idx"]
+                                classes = [k for k, v in sorted(c2i.items(), key=lambda x: x[1])]
+                            elif isinstance(data, dict) and "classes" in data:
+                                classes = data["classes"]
+                            elif isinstance(data, list):
+                                classes = data
+                            if classes:
+                                break
+                    except Exception:
+                        pass
                         
         if isinstance(classes, dict):
             try:
@@ -234,7 +267,7 @@ def verify_and_load_model_startup(candidates, model_name):
         if classes is None or model_state is None:
             raise ValueError("Checkpoint does not contain 'classes' or 'model_state'")
         
-        print(f"Input shape: [1, 3, 224, 224]", flush=True)
+        print(f"Input shape: [1, 3, 256, 256]", flush=True)
         print(f"Output shape: [1, {len(classes)}]", flush=True)
         print(f"Number of classes: {len(classes)}", flush=True)
         
@@ -331,10 +364,14 @@ async def startup_event():
         # Verify and load Plant model
         PLANT_CHECKPOINT = verify_and_load_model_startup(
             [
-                'plant_disease_model.pth',
+                r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\plant-disease-resnet9.pth",
+                r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\best_model.pth",
+                'ai/models/image_classification/plant-disease-resnet9.pth',
+                'plant-disease-resnet9.pth',
                 'ai/models/image_classification/plant_disease_model.pth',
-                'ai/models/image_classification/plant_resnet9_best.pt',
-                'ai/models/image_classification/plant_resnet9.pt'
+                'plant_disease_model.pth',
+                'ai/models/image_classification/best_model.pth',
+                'best_model.pth'
             ],
             'Plant Disease Model'
         )

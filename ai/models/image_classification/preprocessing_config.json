@@ -1,18 +1,16 @@
 {
-    "image_size": [
-        256,
-        256
-    ],
-    "norm_mean": [
-        0.485,
-        0.456,
-        0.406
-    ],
-    "norm_std": [
-        0.229,
-        0.224,
-        0.225
-    ],
-    "color_mode": "RGB",
-    "interpolation": "bilinear"
+  "image_size": [
+    256,
+    256
+  ],
+  "resize_interpolation": "bilinear (torchvision default)",
+  "pixel_scaling": "0-1 (ToTensor)",
+  "normalization_mean": null,
+  "normalization_std": null,
+  "train_augmentation": [
+    "RandomHorizontalFlip",
+    "RandomRotation(15)"
+  ],
+  "val_augmentation": [],
+  "num_classes": 38
 }
