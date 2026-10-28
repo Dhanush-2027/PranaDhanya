@@ -460,25 +460,51 @@ def evaluate_image_models():
     ]
     plant_dataset_path = next((p for p in plant_dataset_candidates if p.exists()), None)
     
+    # Verify dataset structure
+    if plant_dataset_path:
+        subdirs = [d for d in plant_dataset_path.iterdir() if d.is_dir()]
+        print(f"Plant dataset path: {plant_dataset_path}")
+        print(f"Number of subdirectories (classes): {len(subdirs)}")
+        if len(subdirs) <= 1:
+            print(f"ERROR: Only {len(subdirs)} class directory found. Path may be incorrect.")
+            print(f"Subdirectories: {[d.name for d in subdirs[:5]]}")
+            plant_dataset_path = None
+    
     plant_res = None
     if plant_model_path and plant_model_path.exists() and plant_dataset_path and plant_dataset_path.exists():
         try:
             checkpoint = torch.load(plant_model_path, map_location="cpu", weights_only=False)
-            classes = checkpoint.get('classes', []) if isinstance(checkpoint, dict) else []
-            model_state = checkpoint.get('model_state_dict') or checkpoint.get('model_state') or checkpoint
             
+            # Handle different checkpoint formats
+            if isinstance(checkpoint, dict):
+                classes = checkpoint.get('classes', [])
+                model_state = checkpoint.get('model_state_dict') or checkpoint.get('model_state')
+                if model_state is None:
+                    model_state = checkpoint
+            else:
+                # checkpoint is OrderedDict (state dict directly)
+                model_state = checkpoint
+                classes = []
+            
+            # Load classes from JSON if not in checkpoint
             if not classes:
-                for lbl in ["plant_labels.json", "plant_class_names.json", "ai/models/image_classification/plant_class_names.json"]:
+                for lbl in ["plant_labels.json", "plant_class_names.json", "ai/models/image_classification/plant_class_names.json", "ai/models/image_classification/plant_labels.json"]:
                     lbl_p = Path(lbl)
                     if lbl_p.exists():
                         with open(lbl_p, "r", encoding="utf-8") as f:
                             data = json.load(f)
-                            if isinstance(data, dict):
-                                sorted_keys = sorted(data.keys(), key=lambda x: int(x) if x.isdigit() else x)
-                                classes = [data[k] for k in sorted_keys]
-                            else:
+                            if isinstance(data, dict) and "class_to_idx" in data:
+                                classes = [k for k, v in sorted(data["class_to_idx"].items(), key=lambda x: x[1])]
+                            elif isinstance(data, dict) and "classes" in data:
+                                classes = data["classes"]
+                            elif isinstance(data, list):
                                 classes = data
-                        break
+                        if classes:
+                            break
+            
+            if not classes:
+                print(f"ERROR: Could not load classes from checkpoint or JSON files")
+                plant_dataset_path = None
                         
             # Simple test sample creation or finding a leaf image
             images = list(plant_dataset_path.rglob("*.jpg")) + list(plant_dataset_path.rglob("*.png"))

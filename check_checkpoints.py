@@ -1,24 +1,27 @@
 import torch
+import json
+from pathlib import Path
 
-for model_name, path in [
-    ("Plant Best", "ai/models/image_classification/plant_resnet9_best.pt"),
-    ("Plant Final", "ai/models/image_classification/plant_resnet9.pt"),
-    ("Animal Best", "ai/models/image_classification/animal_resnet9_best.pt"),
-    ("Animal Final", "ai/models/image_classification/animal_resnet9.pt")
-]:
-    try:
-        checkpoint = torch.load(path, map_location='cpu')
-        print(f"\n=== {model_name} Checkpoint ===")
-        print("Keys:", list(checkpoint.keys()))
-        if 'epoch' in checkpoint:
-            print("Epoch:", checkpoint['epoch'])
-        if 'epochs_trained' in checkpoint:
-            print("Epochs trained:", checkpoint['epochs_trained'])
-        if 'accuracy' in checkpoint:
-            print("Accuracy:", checkpoint['accuracy'])
-        if 'best_accuracy' in checkpoint:
-            print("Best Accuracy:", checkpoint['best_accuracy'])
-        if 'classes' in checkpoint:
-            print("Num Classes:", len(checkpoint['classes']))
-    except Exception as e:
-        print(f"Error loading {model_name}: {e}")
+checkpoints = [
+    'plant_disease_model.pth',
+    'best_model.pth',
+    'plant-disease-resnet9.pth',
+    'ai/models/image_classification/plant_disease_model.pth',
+    'ai/models/image_classification/best_model.pth',
+    'ai/models/image_classification/plant-disease-resnet9.pth',
+]
+
+for p in checkpoints:
+    path = Path(p)
+    if path.exists():
+        try:
+            ckpt = torch.load(path, map_location='cpu', weights_only=False)
+            if isinstance(ckpt, dict):
+                classes = ckpt.get('classes', [])
+                print(f"{p}: DICT with {len(classes)} classes")
+            else:
+                print(f"{p}: OrderedDict (state dict only)")
+        except Exception as e:
+            print(f"{p}: ERROR - {e}")
+    else:
+        print(f"{p}: NOT FOUND")

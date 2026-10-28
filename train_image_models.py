@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ai.models.resnet9 import ResNet9
 from ai_training_utils import scan_image_dataset, _verify_and_hash_image
+from ai.plant_inference import preprocess_plant_image, save_class_names
 
 # Ensure classification output directory exists
 os.makedirs("ai/models/image_classification", exist_ok=True)
@@ -389,9 +390,7 @@ def main():
     ])
     
     val_transform = transforms.Compose([
-        transforms.Resize((res, res)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        transforms.Lambda(lambda image: preprocess_plant_image(image, res))
     ])
     
     # ----------------------------------------------------
@@ -444,6 +443,7 @@ def main():
     plant_checkpoint = {
         "classes": plant_classes,
         "model_state": plant_model.state_dict(),
+        "img_size": res,
         "history": plant_history,
         "metrics": plant_metrics
     }
@@ -453,6 +453,7 @@ def main():
     
     with open("ai/models/image_classification/plant_classes.json", "w") as f:
         json.dump(plant_classes, f)
+    save_class_names(plant_classes, "ai/models/image_classification")
     with open("ai/models/image_classification/training_history.json", "w") as f:
         json.dump(plant_history, f)
     with open("ai/models/image_classification/plant_metrics.json", "w") as f:

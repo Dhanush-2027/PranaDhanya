@@ -1,82 +1,100 @@
-import tensorflow as tf
-from tensorflow.keras import layers
+"""Enhanced data augmentation pipeline using Albumentations for plant disease detection."""
 
-class GaussianNoiseLayer(layers.Layer):
-    """Custom Keras Layer to add Gaussian Noise during training."""
-    def __init__(self, stddev=0.05, **kwargs):
-        super().__init__(**kwargs)
-        self.stddev = stddev
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
+import numpy as np
 
-    def call(self, inputs, training=None):
-        if training:
-            noise = tf.random.normal(
-                shape=tf.shape(inputs),
-                mean=0.0,
-                stddev=self.stddev,
-                dtype=inputs.dtype
-            )
-            # Keep values in range [0, 1]
-            return tf.clip_by_value(inputs + noise, 0.0, 1.0)
-        return inputs
 
-class ColorAugmentationLayer(layers.Layer):
-    """Custom Keras Layer to apply Random Saturation and Hue during training."""
-    def __init__(self, max_delta=0.08, lower_sat=0.8, upper_sat=1.2, **kwargs):
-        super().__init__(**kwargs)
-        self.max_delta = max_delta
-        self.lower_sat = lower_sat
-        self.upper_sat = upper_sat
-
-    def call(self, inputs, training=None):
-        if training:
-            # tf.image operations expect inputs without batch dimension or can work with batches
-            # Let's map over batch if inputs has rank 4, or process directly
-            def augment_single_image(img):
-                img = tf.image.random_saturation(img, lower=self.lower_sat, upper=self.upper_sat)
-                img = tf.image.random_hue(img, max_delta=self.max_delta)
-                return tf.clip_by_value(img, 0.0, 1.0)
-            
-            # Map across batch size
-            augmented = tf.map_fn(augment_single_image, inputs)
-            return augmented
-        return inputs
-
-def get_augmentation_pipeline():
+def get_train_transforms(img_size=224):
     """
-    Constructs a sequential Keras model applying the requested augmentations:
-    - Random Rotation
-    - Random Flip (Horizontal and Vertical)
-    - Random Brightness
-    - Random Contrast
-    - Random Zoom
-    - Random Crop (via Zoom/Crop layers)
-    - Random Translation
-    - Gaussian Noise
-    - Random Saturation
-    - Random Hue
+    Advanced training augmentation pipeline for plant disease images.
+    Includes geometric and color augmentations simulating real-world conditions.
     """
-    augmentation = tf.keras.Sequential([
-        # Random Flip
-        layers.RandomFlip("horizontal_and_vertical"),
+    return A.Compose([
+        # Geometric transformations
+        A.Resize(height=img_size, width=img_size),
+        A.RandomCrop(height=img_size, width=img_size, p=0.5),
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
+        A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=15, border_mode=0, p=0.5),
         
-        # Random Rotation
-        layers.RandomRotation(factor=0.2, fill_mode="reflect"),
+        # Color and lighting augmentations (important for disease detection)
+        A.RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.3, p=0.5),
+        A.HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=0.5),
         
-        # Random Translation
-        layers.RandomTranslation(height_factor=0.1, width_factor=0.1, fill_mode="reflect"),
+        # Blur and noise to handle image quality variations
+        A.OneOf([
+            A.GaussianBlur(blur_limit=(3, 7), p=1.0),
+            A.MotionBlur(blur_limit=(3, 7), p=1.0),
+            A.MedianBlur(blur_limit=3, p=1.0),
+        ], p=0.3),
         
-        # Random Zoom
-        layers.RandomZoom(height_factor=0.1, width_factor=0.1, fill_mode="reflect"),
+        A.GaussNoise(var_limit=(10.0, 50.0), p=0.3),
         
-        # Random Brightness & Contrast
-        layers.RandomBrightness(factor=0.2),
-        layers.RandomContrast(factor=0.2),
-        
-        # Color Augmentations (Saturation, Hue)
-        ColorAugmentationLayer(),
-        
-        # Gaussian Noise
-        GaussianNoiseLayer(stddev=0.03)
-    ], name="image_augmentation")
-    
-    return augmentation
+        # Normalize
+        A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ToTensorV2(),
+    ])
+
+
+def get_val_transforms(img_size=224):
+    """
+    Validation/test augmentation - minimal preprocessing.
+    """
+    return A.Compose([
+        A.Resize(height=img_size, width=img_size),
+        A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ToTensorV2(),
+    ])
+
+
+def get_tta_transforms(img_size=224):
+    """
+    Test-Time Augmentation transforms for improved inference accuracy.
+    Returns multiple augmentation variants to average predictions.
+    """
+    base_transforms = [
+        # Original
+        A.Compose([
+            A.Resize(height=img_size, width=img_size),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]),
+        # Horizontal flip
+        A.Compose([
+            A.Resize(height=img_size, width=img_size),
+            A.HorizontalFlip(p=1.0),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]),
+        # Vertical flip
+        A.Compose([
+            A.Resize(height=img_size, width=img_size),
+            A.VerticalFlip(p=1.0),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]),
+        # Both flips
+        A.Compose([
+            A.Resize(height=img_size, width=img_size),
+            A.HorizontalFlip(p=1.0),
+            A.VerticalFlip(p=1.0),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]),
+        # Small rotation +5
+        A.Compose([
+            A.Resize(height=img_size, width=img_size),
+            A.Rotate(limit=5, border_mode=0, p=1.0),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]),
+        # Small rotation -5
+        A.Compose([
+            A.Resize(height=img_size, width=img_size),
+            A.Rotate(limit=-5, border_mode=0, p=1.0),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ]),
+    ]
+    return base_transforms

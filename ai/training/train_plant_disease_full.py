@@ -35,6 +35,7 @@ if WORKSPACE_DIR not in sys.path:
     sys.path.insert(0, WORKSPACE_DIR)
 
 from ai.models.resnet9 import ResNet9
+from ai.plant_inference import preprocess_plant_image, save_class_names
 
 # Enable optimal CPU multi-threading
 NUM_THREADS = min(8, os.cpu_count() or 4)
@@ -71,18 +72,11 @@ class FastPlantTensorDataset(Dataset):
 
 
 def _process_single_image(args: Tuple[str, int, int]) -> Tuple[torch.Tensor, int, str, bool]:
-    """Worker function for parallel image loading and ImageNet normalization."""
+    """Worker function using the shared deterministic plant preprocessing."""
     path, label_idx, res = args
     try:
         with Image.open(path) as raw:
-            img = raw.convert('RGB').resize((res, res), Image.BILINEAR)
-            arr = np.asarray(img, dtype=np.float32).transpose(2, 0, 1) / 255.0
-            
-            # Standard ImageNet normalization: mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-            mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)[:, None, None]
-            std = np.array([0.229, 0.224, 0.225], dtype=np.float32)[:, None, None]
-            arr = (arr - mean) / std
-            return torch.from_numpy(arr), label_idx, path, True
+            return preprocess_plant_image(raw, res), label_idx, path, True
     except Exception:
         return None, label_idx, path, False
 
@@ -332,6 +326,7 @@ def train_plant_resnet9(
     checkpoint_payload = {
         "classes": classes,
         "model_state": best_model_state or model.state_dict(),
+        "img_size": 224,
         "epoch": best_epoch,
         "best_val_accuracy": float(best_val_acc),
         "test_metrics": test_metrics,
@@ -350,6 +345,7 @@ def train_plant_resnet9(
     # Save class names & metrics JSON
     with open(os.path.join(out_dir, "plant_classes.json"), "w") as f:
         json.dump(classes, f, indent=4)
+    save_class_names(classes, out_dir)
     with open(os.path.join(out_dir, "plant_metrics.json"), "w") as f:
         json.dump(test_metrics, f, indent=4)
         

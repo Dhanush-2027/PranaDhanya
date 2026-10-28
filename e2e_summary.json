@@ -9,25 +9,25 @@
             "class_distribution": {
                 "rice": 100,
                 "maize": 100,
-                "jute": 100,
-                "cotton": 100,
-                "coconut": 100,
-                "papaya": 100,
-                "orange": 100,
-                "apple": 100,
-                "muskmelon": 100,
-                "watermelon": 100,
-                "grapes": 100,
-                "mango": 100,
-                "banana": 100,
-                "pomegranate": 100,
-                "lentil": 100,
-                "blackgram": 100,
-                "mungbean": 100,
-                "mothbeans": 100,
-                "pigeonpeas": 100,
-                "kidneybeans": 100,
                 "chickpea": 100,
+                "kidneybeans": 100,
+                "pigeonpeas": 100,
+                "mothbeans": 100,
+                "mungbean": 100,
+                "blackgram": 100,
+                "lentil": 100,
+                "pomegranate": 100,
+                "banana": 100,
+                "mango": 100,
+                "grapes": 100,
+                "watermelon": 100,
+                "muskmelon": 100,
+                "apple": 100,
+                "orange": 100,
+                "papaya": 100,
+                "coconut": 100,
+                "cotton": 100,
+                "jute": 100,
                 "coffee": 100
             }
         },
@@ -38,8 +38,8 @@
             "f1_score": 0.9862203221959319
         },
         "latencies": {
-            "direct_ms": 0.018896297975019974,
-            "api_ms": 10.192208290100098
+            "direct_ms": 0.022728334773670544,
+            "api_ms": 10.014829635620117
         },
         "api_match_rate": 0.98
     },
@@ -67,8 +67,8 @@
             "f1_score": 1.0
         },
         "latencies": {
-            "direct_ms": 0.17780065536499023,
-            "api_ms": 9.64442491531372
+            "direct_ms": 0.20020008087158203,
+            "api_ms": 9.284532070159912
         },
         "api_match_rate": 1.0
     },
@@ -91,8 +91,8 @@
             "r2_score": 0.845426320939335
         },
         "latencies": {
-            "direct_ms": 2.0739237467447915,
-            "api_ms": 13.14838727315267
+            "direct_ms": 0.6670951843261719,
+            "api_ms": 7.669369379679362
         },
         "api_match_rate": 1.0
     },
@@ -115,8 +115,8 @@
             "r2_score": 0.8458868421052632
         },
         "latencies": {
-            "direct_ms": 0.9983380635579426,
-            "api_ms": 7.106463114420573
+            "direct_ms": 0.6719430287679037,
+            "api_ms": 8.665800094604492
         },
         "api_match_rate": 1.0
     },
@@ -125,26 +125,26 @@
         "classes_count": 38,
         "total_images": 113625,
         "latencies": {
-            "direct_ms": 230.9502363204956,
-            "api_ms": 263.508939743042
+            "direct_ms": 270.05321979522705,
+            "api_ms": 267.6864504814148
         },
-        "api_match_rate": 1.0
+        "api_match_rate": 0.0
     },
     "animal_disease": {
         "model_name": "Animal Disease Detection (ResNet9 CNN)",
         "classes_count": 11,
         "total_images": 7608,
         "latencies": {
-            "direct_ms": 184.69847440719604,
-            "api_ms": 273.0877757072449
+            "direct_ms": 205.723774433136,
+            "api_ms": 282.3955535888672
         },
         "api_match_rate": 1.0
     },
     "performance": {
-        "total_execution_time_s": 23.76643466949463,
-        "initial_memory_mb": 427.91015625,
-        "final_memory_mb": 709.45703125,
-        "memory_delta_mb": 281.546875,
-        "cpu_percent": 731.1
+        "total_execution_time_s": 25.47853136062622,
+        "initial_memory_mb": 305.58203125,
+        "final_memory_mb": 465.53515625,
+        "memory_delta_mb": 159.953125,
+        "cpu_percent": 0.0
     }
 }

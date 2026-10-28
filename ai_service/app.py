@@ -33,6 +33,12 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
+from ai.plant_inference import (
+    load_plant_model,
+    predict_with_top3,
+    preprocess_plant_image,
+)
+
 
 def get_transforms():
     try:
@@ -47,39 +53,19 @@ def get_image_inference_transform(img_size=None):
     if transforms is None:
         return None
     
+    # FIXED: Use exact preprocessing from training scripts
+    # Training uses: ImageNet normalization with 256x256 resize
     norm_mean = [0.485, 0.456, 0.406]
     norm_std = [0.229, 0.224, 0.225]
     
-    # Check preprocessing_config.json candidates
-    config_candidates = [
-        Path(ROOT_DIR) / "ai/models/image_classification/preprocessing_config.json",
-        Path(ROOT_DIR) / "preprocessing_config.json",
-        Path(r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\preprocessing_config.json")
-    ]
-    for cfg_path in config_candidates:
-        if cfg_path.exists():
-            try:
-                with open(cfg_path, 'r', encoding='utf-8') as f:
-                    cfg = json.load(f)
-                    if img_size is None and "image_size" in cfg:
-                        img_size = tuple(cfg["image_size"])
-                    if "normalization_mean" in cfg:
-                        norm_mean = cfg["normalization_mean"]
-                    if "normalization_std" in cfg:
-                        norm_std = cfg["normalization_std"]
-                break
-            except Exception:
-                pass
-
     if img_size is None:
         img_size = (256, 256)
         
     transform_list = [
         transforms.Resize(img_size),
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize(mean=norm_mean, std=norm_std)
     ]
-    if norm_mean is not None and norm_std is not None:
-        transform_list.append(transforms.Normalize(mean=norm_mean, std=norm_std))
         
     return transforms.Compose(transform_list)
 
@@ -182,10 +168,16 @@ def get_cached_resnet_model(model_key, classes, model_state):
     elif ResNet9 is not None:
         model = ResNet9(in_channels=3, num_classes=len(classes))
         model.load_state_dict(model_state)
-        model.eval()
     else:
         raise RuntimeError("ResNet9 model class is not available")
-        
+    
+    # CRITICAL FIX: Always call eval() and move to CPU
+    model = model.to('cpu')
+    model.eval()
+    
+    # Verify model is in eval mode
+    assert not model.training, f"Model should be in eval mode, but training={model.training}"
+    
     _IMAGE_MODEL_CACHE[model_key] = model
     return model
 
@@ -219,11 +211,19 @@ def verify_and_load_model_startup(candidates, model_name):
     try:
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         checkpoint = torch.load(resolved_path, map_location=device, weights_only=False)
-        if not isinstance(checkpoint, dict):
-            raise ValueError(f"Loaded checkpoint is not a dictionary, got {type(checkpoint)}")
-            
-        classes = checkpoint.get('classes')
-        model_state = checkpoint.get('model_state_dict') or checkpoint.get('model_state') or checkpoint
+        
+        # Handle different checkpoint formats
+        if isinstance(checkpoint, dict):
+            classes = checkpoint.get('classes')
+            model_state = checkpoint.get('model_state_dict') or checkpoint.get('model_state')
+            # If no model_state but classes exist, checkpoint might be the state dict
+            if model_state is None and classes is None:
+                model_state = checkpoint
+                classes = None
+        else:
+            # checkpoint is directly the state dict (OrderedDict)
+            model_state = checkpoint
+            classes = None
         
         if classes is None:
             # Attempt to resolve from json candidates
@@ -238,7 +238,6 @@ def verify_and_load_model_startup(candidates, model_name):
                 Path(ROOT_DIR) / 'ai/models/image_classification/class_mapping.json',
                 Path(ROOT_DIR) / 'ai/models/image_classification/plant_labels.json',
                 Path(ROOT_DIR) / 'plant_labels.json',
-                Path(r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\class_mapping.json")
             ]
             for lbl_path in lbl_candidates:
                 if lbl_path.exists():
@@ -263,9 +262,12 @@ def verify_and_load_model_startup(candidates, model_name):
                 classes = [classes[k] for k in sorted_keys]
             except Exception:
                 classes = list(classes.values())
-                
-        if classes is None or model_state is None:
-            raise ValueError("Checkpoint does not contain 'classes' or 'model_state'")
+        
+        # Final validation
+        if model_state is None:
+            raise ValueError(f"Checkpoint does not contain model_state. Format: {type(checkpoint)}")
+        if classes is None:
+            raise ValueError(f"Classes not found in checkpoint or JSON files. Path: {resolved_path}")
         
         print(f"Input shape: [1, 3, 256, 256]", flush=True)
         print(f"Output shape: [1, {len(classes)}]", flush=True)
@@ -285,7 +287,7 @@ def verify_and_load_model_startup(candidates, model_name):
         sys.exit(1)
 
 
-def process_and_debug_image(contents, file, model_name):
+def process_and_debug_image(contents, file, model_name, img_size=None, save_debug=True):
     # Step 1: Verify the API
     file_name = file.filename
     file_size = len(contents)
@@ -304,23 +306,26 @@ def process_and_debug_image(contents, file, model_name):
     print(f"SHA256 hash of the uploaded image: {img_hash}", flush=True)
     
     # Step 2: Verify Image Loading
-    os.makedirs("debug", exist_ok=True)
-    img.save("debug/original.jpg")
-    
-    transform = get_image_inference_transform()
-    if transform is None:
-        raise RuntimeError('torchvision is unavailable')
-    tensor = transform(img)
+    if model_name == 'Plant Disease Model':
+        if img_size is None:
+            raise ValueError('Plant model image size is required')
+        tensor = preprocess_plant_image(img, img_size)
+    else:
+        transform = get_image_inference_transform()
+        if transform is None:
+            raise RuntimeError('torchvision is unavailable')
+        tensor = transform(img)
     tensor_batch = torch.unsqueeze(tensor, 0)
     
-    # Save preprocessed
-    transforms_mod = get_transforms()
-    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
-    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
-    unnorm_tensor = tensor * std + mean
-    unnorm_tensor = torch.clamp(unnorm_tensor, 0, 1)
-    unnorm_img = transforms_mod.ToPILImage()(unnorm_tensor)
-    unnorm_img.save("debug/preprocessed.png")
+    if save_debug:
+        os.makedirs("debug", exist_ok=True)
+        img.save("debug/original.jpg")
+        transforms_mod = get_transforms()
+        if transforms_mod is not None:
+            std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+            mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+            unnorm_tensor = torch.clamp(tensor * std + mean, 0, 1)
+            transforms_mod.ToPILImage()(unnorm_tensor).save("debug/preprocessed.png")
     
     print(f"=== Image Preprocessing Verification for {model_name} ===", flush=True)
     print(f"shape: {tensor_batch.shape}", flush=True)
@@ -328,6 +333,7 @@ def process_and_debug_image(contents, file, model_name):
     print(f"min pixel value: {tensor.min().item():.4f}", flush=True)
     print(f"max pixel value: {tensor.max().item():.4f}", flush=True)
     print(f"mean pixel value: {tensor.mean().item():.4f}", flush=True)
+    print(f"std pixel value: {tensor.std(unbiased=False).item():.4f}", flush=True)
     
     return img, tensor_batch
 
@@ -361,19 +367,16 @@ async def startup_event():
         load_fertilizer_recommender()
         load_fertilizer_metadata()
         
-        # Verify and load Plant model
-        PLANT_CHECKPOINT = verify_and_load_model_startup(
-            [
-                r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\plant-disease-resnet9.pth",
-                r"C:\Users\Dhanush\Downloads\34741502-80-nKYaXRvj\best_model.pth",
-                'ai/models/image_classification/plant-disease-resnet9.pth',
-                'plant-disease-resnet9.pth',
-                'ai/models/image_classification/plant_disease_model.pth',
-                'plant_disease_model.pth',
-                'ai/models/image_classification/best_model.pth',
-                'best_model.pth'
-            ],
-            'Plant Disease Model'
+        # Plant inference and offline evaluation share one checkpoint and class list.
+        PLANT_CHECKPOINT = load_plant_model(device='cpu')
+        if len(PLANT_CHECKPOINT['classes']) != len(set(PLANT_CHECKPOINT['classes'])):
+            raise ValueError("Plant class names must be unique")
+        logger.info(
+            "Loaded classes=%d from plant checkpoint %s at %dx%d",
+            len(PLANT_CHECKPOINT['classes']),
+            PLANT_CHECKPOINT['_resolved_path'],
+            PLANT_CHECKPOINT['img_size'],
+            PLANT_CHECKPOINT['img_size'],
         )
         
         # Verify and load Animal model
@@ -683,37 +686,29 @@ async def predict_plant(file: UploadFile = File(...)):
     logger.info(f"🌱 Plant disease prediction requested for file: {file.filename}")
     
     try:
-        contents = await file.read()
-        img, tensor = process_and_debug_image(contents, file, 'Plant Disease Model')
-        
         if PLANT_CHECKPOINT is None:
             raise HTTPException(status_code=500, detail="Plant classification model is not loaded")
-            
+
+        contents = await file.read()
         classes = PLANT_CHECKPOINT.get('classes')
-        model_state = PLANT_CHECKPOINT.get('model_state')
-        
-        # Load model using get_cached_resnet_model
-        model_key = PLANT_CHECKPOINT.get('_resolved_path', 'plant_disease_model.pth')
-        model = get_cached_resnet_model(model_key, classes, model_state)
-        
-        with torch.no_grad():
-            logits = model(tensor)
-            probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
+        model = PLANT_CHECKPOINT['model']
+        prediction, top3 = predict_with_top3(
+            model,
+            classes,
+            contents,
+            image_size=PLANT_CHECKPOINT['img_size'],
+        )
+        top_idx = int(prediction['index'])
+        disease = str(prediction['label'])
+        confidence = float(prediction['confidence']) * 100.0
             
-        # Step 4: Print Raw Model Output
-        print(f"=== Raw Model Output for Plant Disease Model ===", flush=True)
-        print(probs.tolist(), flush=True)
-        
-        top_idx = int(np.argmax(probs))
-        disease = classes[top_idx]
-        confidence = float(probs[top_idx]*100.0)
-        
         # Step 5: Verify Class Mapping
         print(f"=== Class Mapping Verification for Plant Disease Model ===", flush=True)
+        if top_idx < 0 or top_idx >= len(classes):
+            raise ValueError(f"Predicted class index {top_idx} is outside the class list")
         print(f"Predicted class index: {top_idx}", flush=True)
         print(f"Predicted class label: {disease}", flush=True)
         print(f"Label loaded from checkpoint classes list: {classes[top_idx]}", flush=True)
-        assert len(classes) == len(probs), f"Classes length ({len(classes)}) != probs length ({len(probs)})"
         
         # Step 6: Verify Disease Metadata
         meta = resolve_plant_disease_details(disease)
@@ -721,13 +716,12 @@ async def predict_plant(file: UploadFile = File(...)):
         print(f"Metadata lookup key: {disease}", flush=True)
         print(f"Selected metadata: {meta}", flush=True)
         
-        top3_indices = np.argsort(probs)[::-1][:3]
         top3_preds = [
             {
-                "class": format_plant_display_name(classes[idx]),
-                "confidence": float(probs[idx] * 100.0)
+                "class": format_plant_display_name(str(item['class'])),
+                "confidence": float(item['confidence']) * 100.0
             }
-            for idx in top3_indices if idx < len(classes)
+            for item in top3
         ]
         
         return {

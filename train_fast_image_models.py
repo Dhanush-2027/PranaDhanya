@@ -19,6 +19,7 @@ print(f"PyTorch using {num_threads} CPU threads for high-speed training.", flush
 # Add repo to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ai.models.resnet9 import ResNet9
+from ai.plant_inference import save_class_names
 
 os.makedirs("ai/models/image_classification", exist_ok=True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -300,6 +301,7 @@ def main():
     plant_ckpt = {
         "classes": plant_classes,
         "model_state": plant_model.state_dict(),
+        "img_size": 224,
         "history": plant_history,
         "metrics": plant_metrics
     }
@@ -308,6 +310,7 @@ def main():
     torch.save(plant_ckpt, "ai/models/image_classification/plant_resnet9.pt")
     with open("ai/models/image_classification/plant_classes.json", "w") as f:
         json.dump(plant_classes, f)
+    save_class_names(plant_classes, "ai/models/image_classification")
     with open("ai/models/image_classification/plant_metrics.json", "w") as f:
         json.dump(plant_metrics, f)
     with open("ai/models/image_classification/training_history.json", "w") as f:

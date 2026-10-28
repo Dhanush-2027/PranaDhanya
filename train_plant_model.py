@@ -36,6 +36,7 @@ if str(WORKSPACE_ROOT) not in sys.path:
     sys.path.insert(0, str(WORKSPACE_ROOT))
 
 from ai.models.resnet9 import ResNet9
+from ai.plant_inference import save_class_names
 
 
 def _load_single_plant_image(args):
@@ -423,11 +424,13 @@ def train_plant_model(
         json.dump(label_map_payload, f, indent=4)
     with open(os.path.join(output_dir, "plant_classes.json"), "w", encoding="utf-8") as f:
         json.dump(classes, f, indent=4)
+    save_class_names(classes, output_dir)
         
     # Checkpoints
     best_checkpoint = {
         "model_state": best_model_state if best_model_state is not None else model.state_dict(),
         "classes": classes,
+        "img_size": img_size,
         "class_to_idx": class_to_idx,
         "num_classes": num_classes,
         "best_val_accuracy": float(best_val_acc),
@@ -447,6 +450,7 @@ def train_plant_model(
     final_checkpoint = {
         "model_state": {k: v.cpu().clone() for k, v in model.state_dict().items()},
         "classes": classes,
+        "img_size": img_size,
         "class_to_idx": class_to_idx,
         "num_classes": num_classes,
         "final_epoch": len(history["epoch"]),

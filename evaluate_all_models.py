@@ -22,6 +22,7 @@ if sys.platform.startswith('win'):
 # Add the root directory to path to resolve ResNet9 model architecture import
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ai.models.resnet9 import ResNet9
+from ai.plant_inference import load_plant_model, predict_logits, preprocess_plant_image
 
 
 class CombinedAnimalDataset(Dataset):
@@ -292,18 +293,19 @@ def main():
     # 5. Plant Disease Detection (ResNet9 PyTorch Model)
     print("\n--- 5. Evaluating Plant Disease Detection Model ---")
     try:
-        model_path = "ai/models/image_classification/plant_resnet9_best.pt"
         data_dir = "datasets/plant_disease/data"
         
-        checkpoint = torch.load(model_path, map_location="cpu")
-        classes = checkpoint["classes"]
-        model_state = checkpoint["model_state"]
-        
-        model = ResNet9(in_channels=3, num_classes=len(classes))
-        model.load_state_dict(model_state)
-        model.eval()
-        
-        dataset = datasets.ImageFolder(data_dir, transform=transform)
+        plant_inference = load_plant_model(device="cpu")
+        model = plant_inference["model"]
+        classes = plant_inference["classes"]
+        plant_transform = transforms.Lambda(
+            lambda image: preprocess_plant_image(image, plant_inference["img_size"])
+        )
+        dataset = datasets.ImageFolder(data_dir, transform=plant_transform)
+        if dataset.classes != classes:
+            raise ValueError(
+                "Plant dataset class order does not match the checkpoint class order"
+            )
         
         # Subset to 2 samples per class for quick evaluation
         indices = []
@@ -323,12 +325,11 @@ def main():
         y_true = []
         y_pred = []
         
-        with torch.no_grad():
-            for xb, yb in loader:
-                logits = model(xb)
-                preds = torch.argmax(logits, dim=1).numpy()
-                y_true.extend(yb.numpy())
-                y_pred.extend(preds)
+        for xb, yb in loader:
+            logits = predict_logits(model, xb)
+            preds = torch.argmax(logits, dim=1).numpy()
+            y_true.extend(yb.numpy())
+            y_pred.extend(preds)
                 
         acc = accuracy_score(y_true, y_pred)
         p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted', zero_division=0)
