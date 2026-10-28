@@ -21,6 +21,7 @@ if sys.platform.startswith('win'):
 # Add current directory to path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ai.models.resnet9 import ResNet9
+from ai.plant_inference import load_plant_model, preprocess_plant_image
 
 def audit_dataset_loading(data_dir):
     print("\n=== 1. Dataset Loading Audit ===")
@@ -90,29 +91,17 @@ def audit_preprocessing_and_inference(model_dir, data_dir):
         return
         
     try:
-        checkpoint = torch.load(model_path, map_location="cpu")
-        print("✓ Successfully loaded PyTorch model checkpoint.")
-        classes = checkpoint.get("classes", [])
-        print(f"Checkpoint contains {len(classes)} classes.")
-        model_state = checkpoint.get("model_state")
-    except Exception as e:
+        plant_bundle = load_plant_model(checkpoint_path=model_path, device="cpu")
+        classes = plant_bundle["classes"]
+        model = plant_bundle["model"]
+        image_size = plant_bundle["img_size"]
+        print(
+            f"✓ Loaded {plant_bundle['architecture']} from "
+            f"{plant_bundle['_resolved_path']} with {plant_bundle['output_count']} outputs."
+        )
+    except (OSError, RuntimeError, TypeError, ValueError) as e:
         print(f"✗ Error loading model checkpoint: {e}")
         return
-        
-    # Build model
-    model = ResNet9(in_channels=3, num_classes=len(classes))
-    model.load_state_dict(model_state)
-    model.eval()
-    
-    # Preprocessing
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        )
-    ])
     
     # Find 5 known images from different classes
     data_path = Path(data_dir)
@@ -129,7 +118,7 @@ def audit_preprocessing_and_inference(model_dir, data_dir):
         try:
             img = Image.open(path).convert("RGB")
             # Apply preprocessing
-            tensor = transform(img)
+            tensor = preprocess_plant_image(img, image_size)
             tensor_batch = tensor.unsqueeze(0)
             
             # Print tensor information
@@ -176,26 +165,28 @@ def evaluate_metrics(model_dir, data_dir):
         print(f"✗ Model not found at {model_path}")
         return
         
-    checkpoint = torch.load(model_path, map_location="cpu")
-    classes = checkpoint["classes"]
-    model_state = checkpoint["model_state"]
-    
-    model = ResNet9(in_channels=3, num_classes=len(classes))
-    model.load_state_dict(model_state)
-    model.eval()
-    
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        )
-    ])
+    try:
+        plant_bundle = load_plant_model(checkpoint_path=model_path, device="cpu")
+    except (OSError, RuntimeError, TypeError, ValueError) as error:
+        print(f"✗ Error loading verified plant checkpoint: {error}")
+        return
+    classes = plant_bundle["classes"]
+    model = plant_bundle["model"]
+    image_size = plant_bundle["img_size"]
     
     # Load dataset
     print(f"Loading full evaluation dataset from {data_dir}...")
-    dataset = datasets.ImageFolder(data_dir, transform=transform)
+    dataset = datasets.ImageFolder(
+        data_dir,
+        transform=transforms.Lambda(
+            lambda image: preprocess_plant_image(image, image_size)
+        ),
+    )
+    if dataset.classes != classes:
+        raise ValueError(
+            "Dataset ImageFolder class order does not match the checkpoint mapping: "
+            f"dataset={len(dataset.classes)} classes, checkpoint={len(classes)} classes"
+        )
     
     # Take a subset of 100 images for evaluation to avoid running too slow
     # We will stratify by selecting 1-2 samples per class

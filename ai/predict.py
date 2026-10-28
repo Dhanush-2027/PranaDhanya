@@ -3,10 +3,21 @@ import json
 import joblib
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+import torch
 from PIL import Image
 from pathlib import Path
 from ai.config import IMAGE_HEIGHT, IMAGE_WIDTH
+
+
+def _load_keras_model(model_path):
+    try:
+        import tensorflow as tf
+    except ImportError as error:
+        raise RuntimeError(
+            "TensorFlow is required to load this Keras model"
+        ) from error
+    return tf.keras.models.load_model(model_path)
+
 
 def load_tabular_preprocessing(model_dir):
     """Loads feature columns, label encoders, target classes, and scalers."""
@@ -54,9 +65,9 @@ def predict_tabular(model_dir, raw_inputs):
     sm_model_path = model_path / "saved_model"
     
     if h5_model_path.exists():
-        model = tf.keras.models.load_model(h5_model_path)
+        model = _load_keras_model(h5_model_path)
     elif sm_model_path.exists():
-        model = tf.keras.models.load_model(sm_model_path)
+        model = _load_keras_model(sm_model_path)
         
     if model is None:
         raise FileNotFoundError(f"No trained model found in {model_dir}")
@@ -153,6 +164,56 @@ def predict_image(model_dir, image_path_or_bytes):
     Supports PyTorch ResNet9 (.pth, .pt) checkpoints and legacy Keras models.
     """
     model_path = Path(model_dir)
+    plant_checkpoint_relatives = (
+        Path("plant_resnet9_best.pt"),
+        Path("image_classification") / "plant_resnet9_best.pt",
+        Path("ai") / "models" / "image_classification" / "plant_resnet9_best.pt",
+    )
+    plant_model_requested = "plant" in str(model_path).lower() or any(
+        (model_path / relative_path).is_file()
+        for relative_path in plant_checkpoint_relatives
+    )
+
+    if plant_model_requested:
+        from ai.plant_inference import PLANT_MODEL_PATH, load_plant_model, predict
+
+        if (
+            model_path.is_file()
+            and model_path.resolve() != PLANT_MODEL_PATH.resolve()
+        ):
+            raise ValueError(
+                "The requested legacy plant checkpoint is not the verified active "
+                f"checkpoint: {model_path.resolve()}"
+            )
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        checkpoint = load_plant_model(device=device)
+        prediction = predict(
+            checkpoint["model"],
+            checkpoint["classes"],
+            image_path_or_bytes,
+            image_size=checkpoint["img_size"],
+        )
+        class_probabilities = prediction["probabilities"]
+        return {
+            "predicted_class": prediction["class_id"],
+            "class_id": prediction["class_id"],
+            "class_index": prediction["class_index"],
+            "display_label": prediction["label"],
+            "confidence": float(prediction["confidence"] * 100.0),
+            "probability_distribution": {
+                class_id: float(class_probabilities[class_index])
+                for class_index, class_id in enumerate(checkpoint["classes"])
+            },
+            "top_predictions": [
+                {
+                    "class": item["class_id"],
+                    "label": item["label"],
+                    "probability": float(item["confidence"]),
+                }
+                for item in prediction["top_k"]
+            ],
+        }
     
     # 1. Check for PyTorch checkpoints first
     pt_candidates = [
@@ -172,7 +233,6 @@ def predict_image(model_dir, image_path_or_bytes):
     pt_candidates = [p for p in pt_candidates if p is not None and p.exists()]
     
     if len(pt_candidates) > 0:
-        import torch
         from ai.models.resnet9 import ResNet9, build_resnet9_from_state_dict
         
         target_pt = pt_candidates[0]
@@ -265,9 +325,9 @@ def predict_image(model_dir, image_path_or_bytes):
     sm_model_path = model_path / "saved_model" if model_path.is_dir() else model_path
     
     if h5_model_path.exists():
-        model = tf.keras.models.load_model(h5_model_path)
+        model = _load_keras_model(h5_model_path)
     elif sm_model_path.exists():
-        model = tf.keras.models.load_model(sm_model_path)
+        model = _load_keras_model(sm_model_path)
         
     if model is None:
         raise FileNotFoundError(f"No trained model found in {model_dir}")
@@ -312,4 +372,3 @@ def predict_image(model_dir, image_path_or_bytes):
         "probability_distribution": distribution,
         "top_predictions": top_predictions
     }
-

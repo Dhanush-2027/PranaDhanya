@@ -14,6 +14,7 @@ if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
 from ai.models.resnet9 import ResNet9
+from ai.plant_inference import TRANSFORM, load_plant_model, predict
 
 def get_inference_transform():
     return transforms.Compose([
@@ -35,23 +36,29 @@ def test_inference_on_checkpoint(checkpoint_path, model_name, sample_images):
         return False
         
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    
-    if not isinstance(checkpoint, dict) or 'classes' not in checkpoint or 'model_state' not in checkpoint:
-        print(f"ERROR: Invalid checkpoint format in {checkpoint_path}", flush=True)
-        return False
-        
-    classes = checkpoint['classes']
-    model_state = checkpoint['model_state']
+    is_plant_model = "plant" in model_name.lower()
+    if is_plant_model:
+        try:
+            checkpoint = load_plant_model(checkpoint_path=checkpoint_path, device=device)
+        except (OSError, RuntimeError, TypeError, ValueError) as error:
+            print(f"ERROR: Could not load verified plant checkpoint: {error}", flush=True)
+            return False
+        classes = checkpoint["classes"]
+        model = checkpoint["model"]
+        image_size = checkpoint["img_size"]
+    else:
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        if not isinstance(checkpoint, dict) or 'classes' not in checkpoint or 'model_state' not in checkpoint:
+            print(f"ERROR: Invalid checkpoint format in {checkpoint_path}", flush=True)
+            return False
+        classes = checkpoint['classes']
+        model = ResNet9(in_channels=3, num_classes=len(classes)).to(device)
+        model.load_state_dict(checkpoint["model_state"], strict=True)
+        model.eval()
     
     print(f"✓ Checkpoint loaded successfully from: {checkpoint_path}")
     print(f"✓ Number of classes: {len(classes)}")
     print(f"✓ Classes: {classes[:5]} ... (showing first 5)")
-    
-    # Initialize ResNet9 model
-    model = ResNet9(in_channels=3, num_classes=len(classes)).to(device)
-    model.load_state_dict(model_state)
-    model.eval()
     
     transform = get_inference_transform()
     
@@ -70,16 +77,20 @@ def test_inference_on_checkpoint(checkpoint_path, model_name, sample_images):
         img_hash = hashlib.sha256(img_bytes).hexdigest()
         
         # Preprocessing
-        tensor = transform(img).unsqueeze(0).to(device)
+        if is_plant_model:
+            decoded_upload = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+            tensor = TRANSFORM(decoded_upload, image_size).unsqueeze(0).to(device)
+            prediction = predict(model, classes, img_bytes, image_size=image_size)
+            probs = np.asarray(prediction["probabilities"], dtype=np.float32)
+        else:
+            tensor = transform(img).unsqueeze(0).to(device)
+            with torch.no_grad():
+                logits = model(tensor)
+                probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
         tensor_mean = float(tensor.mean().item())
         tensor_min = float(tensor.min().item())
         tensor_max = float(tensor.max().item())
-        
-        # Inference
-        with torch.no_grad():
-            logits = model(tensor)
-            probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
-            
+
         top_idx = int(np.argmax(probs))
         predicted_class = classes[top_idx]
         confidence = float(probs[top_idx] * 100.0)

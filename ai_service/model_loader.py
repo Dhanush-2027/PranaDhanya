@@ -287,6 +287,25 @@ def load_labels(path='plant_labels.json'):
 
 @lru_cache(maxsize=None)
 def load_image_model(path='ai/models/image_classification/plant_disease_model.pth', device=None):
+    filename = Path(path).name.lower()
+    if 'plant' in filename:
+        from ai.plant_inference import PLANT_MODEL_PATH, load_plant_model
+
+        requested_path = _resolve_path(path)
+        if (
+            requested_path is not None
+            and requested_path.is_file()
+            and requested_path.resolve() != PLANT_MODEL_PATH.resolve()
+        ):
+            raise ValueError(
+                "The requested legacy plant checkpoint is not the verified active "
+                f"checkpoint: {requested_path}"
+            )
+
+        return load_plant_model(
+            device=device or ('cuda' if torch.cuda.is_available() else 'cpu')
+        )
+
     resolved_path = _resolve_path(path)
     if not resolved_path or not resolved_path.exists():
         # Fallbacks across known naming conventions
@@ -313,6 +332,13 @@ def load_image_model(path='ai/models/image_classification/plant_disease_model.pt
             'ai/models/image_classification/animal_resnet9.pt',
             'ai/models/image_classification/plant_resnet9.pt'
         ]
+        if 'animal' in filename.lower() or 'livestock' in filename.lower():
+            candidates = [
+                candidate
+                for candidate in candidates
+                if 'plant' not in candidate.lower()
+                and 'best_model' not in candidate.lower()
+            ]
         for cand in candidates:
             cand_res = _resolve_path(cand)
             if cand_res and cand_res.exists():
@@ -380,7 +406,11 @@ def load_image_model(path='ai/models/image_classification/plant_disease_model.pt
 
 
 def load_plant_disease_model(device=None):
-    return load_image_model('ai/models/image_classification/plant-disease-resnet9.pth', device=device)
+    from ai.plant_inference import load_plant_model
+
+    return load_plant_model(
+        device=device or ('cuda' if torch.cuda.is_available() else 'cpu')
+    )
 
 
 def load_animal_disease_model(device=None):

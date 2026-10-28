@@ -9,7 +9,7 @@ from pathlib import Path
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, datasets
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, r2_score, mean_absolute_error, mean_squared_error
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support, r2_score, mean_absolute_error, mean_squared_error
 
 # Force UTF-8 output
 if sys.platform.startswith('win'):
@@ -22,7 +22,12 @@ if sys.platform.startswith('win'):
 # Add the root directory to path to resolve ResNet9 model architecture import
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from ai.models.resnet9 import ResNet9
-from ai.plant_inference import load_plant_model, predict_logits, preprocess_plant_image
+from ai.plant_inference import (
+    inspect_plant_dataset,
+    load_plant_model,
+    predict_logits,
+    preprocess_plant_image,
+)
 
 
 class CombinedAnimalDataset(Dataset):
@@ -298,6 +303,7 @@ def main():
         plant_inference = load_plant_model(device="cpu")
         model = plant_inference["model"]
         classes = plant_inference["classes"]
+        dataset_info = inspect_plant_dataset(data_dir, classes)
         plant_transform = transforms.Lambda(
             lambda image: preprocess_plant_image(image, plant_inference["img_size"])
         )
@@ -306,6 +312,18 @@ def main():
             raise ValueError(
                 "Plant dataset class order does not match the checkpoint class order"
             )
+        print(
+            f"Checkpoint={plant_inference['_resolved_path']} | "
+            f"Architecture={plant_inference['architecture']} | "
+            f"Output neurons={plant_inference['output_count']} | "
+            f"Training classes={plant_inference['training_class_count']}"
+        )
+        print(
+            f"Dataset directories={dataset_info['directory_class_count']} | "
+            f"image files={dataset_info['image_count']} | "
+            f"missing={dataset_info['missing_classes']} | "
+            f"unsupported={dataset_info['unsupported_directories']}"
+        )
         
         # Subset to 2 samples per class for quick evaluation
         indices = []
@@ -333,7 +351,18 @@ def main():
                 
         acc = accuracy_score(y_true, y_pred)
         p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='weighted', zero_division=0)
+        class_report = precision_recall_fscore_support(
+            y_true,
+            y_pred,
+            labels=list(range(len(classes))),
+            average=None,
+            zero_division=0,
+        )
+        confusion = confusion_matrix(y_true, y_pred, labels=list(range(len(classes))))
         
+        print(f"Images evaluated: {len(y_true)}")
+        print(f"Valid ground-truth labels: {len(y_true)}")
+        print(f"Supported classes: {len(classes)}")
         print(f"Accuracy:  {acc:.4f}")
         print(f"F1-Score:  {f1:.4f}")
         
@@ -342,7 +371,26 @@ def main():
             'precision': float(p),
             'recall': float(r),
             'f1_score': float(f1),
-            'samples': len(indices)
+            'samples': len(y_true),
+            'valid_ground_truth_labels': len(y_true),
+            'supported_classes': len(classes),
+            'invalid_or_unmapped_predictions': 0,
+            'dataset_class_directories': dataset_info['directory_class_count'],
+            'dataset_image_files': dataset_info['image_count'],
+            'missing_dataset_classes': dataset_info['missing_classes'],
+            'unsupported_dataset_directories': dataset_info['unsupported_directories'],
+            'per_class_metrics': {
+                class_name: {
+                    'precision': float(class_report[0][index]),
+                    'recall': float(class_report[1][index]),
+                    'f1_score': float(class_report[2][index]),
+                }
+                for index, class_name in enumerate(classes)
+            },
+            'confusion_matrix': confusion.tolist(),
+            'checkpoint': plant_inference['_resolved_path'],
+            'architecture': plant_inference['architecture'],
+            'class_mapping_source': plant_inference['class_mapping_source'],
         }
     except Exception as e:
         print(f"Error evaluating Plant ResNet9: {e}")

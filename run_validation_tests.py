@@ -1,6 +1,7 @@
 import os
 import json
 import joblib
+from pathlib import Path
 import torch
 import pandas as pd
 import numpy as np
@@ -9,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from torchvision import transforms
 
 from ai.models.resnet9 import ResNet9
+from ai.plant_inference import load_plant_model, predict
 
 def run_tabular_tests():
     print("\n==============================================")
@@ -130,13 +132,8 @@ def run_image_tests():
     
     # 1. Plant Disease CNN Test (50 samples)
     print("\n--- Plant Disease Model Test (50 samples) ---")
-    plant_checkpoint = torch.load("ai/models/image_classification/plant_resnet9_best.pt", map_location=device, weights_only=False)
+    plant_checkpoint = load_plant_model(device=device)
     plant_classes = plant_checkpoint["classes"]
-    
-    plant_model = ResNet9(in_channels=3, num_classes=len(plant_classes))
-    plant_model.load_state_dict(plant_checkpoint["model_state"])
-    plant_model.to(device)
-    plant_model.eval()
     
     # Load 50 random images from dataset
     plant_path = r"C:\Users\Dhanush\OneDrive\Desktop\CL\datasets\plant_disease\data"
@@ -144,14 +141,22 @@ def run_image_tests():
     for cls in plant_classes:
         cls_dir = os.path.join(plant_path, cls)
         if os.path.exists(cls_dir):
-            for f in os.listdir(cls_dir)[:2]: # take 2 from each class
-                all_plant_images.append((os.path.join(cls_dir, f), cls))
+            for f in sorted(os.listdir(cls_dir))[:2]:
+                if Path(f).suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}:
+                    all_plant_images.append((os.path.join(cls_dir, f), cls))
                 
     np.random.seed(42)
-    test_samples = [all_plant_images[idx] for idx in np.random.choice(len(all_plant_images), 50, replace=False)]
-    
-    transform = transforms.Compose([
-        transforms.Resize((32, 32)), # match training resolution
+    test_samples = [
+        all_plant_images[idx]
+        for idx in np.random.choice(
+            len(all_plant_images),
+            min(50, len(all_plant_images)),
+            replace=False,
+        )
+    ]
+
+    live_transform = transforms.Compose([
+        transforms.Resize((32, 32)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
@@ -161,19 +166,25 @@ def run_image_tests():
     
     for path, expected_cls in test_samples:
         try:
-            with Image.open(path) as img:
-                tensor = transform(img.convert('RGB')).unsqueeze(0).to(device)
-                with torch.no_grad():
-                    output = plant_model(tensor)
-                    pred_idx = torch.argmax(output, dim=1).item()
-                    pred_cls = plant_classes[pred_idx]
+            prediction = predict(
+                plant_checkpoint["model"],
+                plant_classes,
+                path,
+                image_size=plant_checkpoint["img_size"],
+            )
+            pred_idx = int(prediction["class_index"])
+            pred_cls = str(prediction["class_id"])
             if pred_cls == expected_cls:
                 correct += 1
             comparisons.append((os.path.basename(path), pred_cls, expected_cls))
         except Exception as e:
             print(f"Error reading {path}: {e}")
             
-    print(f"Plant Disease CNN Accuracy: {correct}/50 ({correct*2:.1f}%)")
+    evaluated = len(comparisons)
+    print(
+        f"Plant Disease CNN Accuracy: {correct}/{evaluated} "
+        f"({correct / evaluated * 100:.1f}%)" if evaluated else "Plant Disease CNN: no samples evaluated"
+    )
     print("\nSample Comparisons (First 5):")
     for fname, pred, exp in comparisons[:5]:
         print(f"File: {fname} | Predicted: {pred} | Expected: {exp}")
@@ -243,7 +254,7 @@ def run_image_tests():
     for path, expected_cls in test_samples_l:
         try:
             with Image.open(path) as img:
-                tensor = transform(img.convert('RGB')).unsqueeze(0).to(device)
+                tensor = live_transform(img.convert('RGB')).unsqueeze(0).to(device)
                 with torch.no_grad():
                     output = live_model(tensor)
                     pred_idx = torch.argmax(output, dim=1).item()

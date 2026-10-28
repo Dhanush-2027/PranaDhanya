@@ -10,6 +10,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from ai.models.resnet9 import ResNet9
+from ai.plant_inference import TRANSFORM, inspect_plant_dataset, load_plant_model
 
 def run_diagnostics():
     print("=" * 80)
@@ -17,8 +18,18 @@ def run_diagnostics():
     print("=" * 80)
     
     plant_path = r"C:\Users\Dhanush\OneDrive\Desktop\CL\datasets\plant_disease\data"
-    subdirs = sorted([d for d in os.listdir(plant_path) if os.path.isdir(os.path.join(plant_path, d))])
+    plant_bundle = load_plant_model(device="cpu")
+    classes_plant = plant_bundle["classes"]
+    image_size = plant_bundle["img_size"]
+    dataset_report = inspect_plant_dataset(plant_path, classes_plant)
+    subdirs = classes_plant
     class_to_idx = {cls: idx for idx, cls in enumerate(subdirs)}
+    print(
+        f"Canonical checkpoint classes={len(classes_plant)}; dataset directories="
+        f"{dataset_report['directory_class_count']}; missing="
+        f"{len(dataset_report['missing_classes'])}; unsupported="
+        f"{len(dataset_report['unsupported_directories'])}"
+    )
     
     # -------------------------------------------------------------
     # CHECK 1: DATA LOADING BUG & LABEL ALIGNMENT
@@ -46,11 +57,7 @@ def run_diagnostics():
             img = Image.open(self.paths[idx]).convert('RGB')
             return self.transform(img), self.labels[idx]
             
-    transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
+    transform = lambda image: TRANSFORM(image, image_size)
     
     ds = MiniDataset(sample_paths, sample_labels, transform)
     loader = torch.utils.data.DataLoader(ds, batch_size=4, shuffle=True)
@@ -80,32 +87,23 @@ def run_diagnostics():
     print("-" * 70)
     train_mean = [0.485, 0.456, 0.406]
     train_std = [0.229, 0.224, 0.225]
-    print(f"  2.1 Training Transform: Resize((224, 224)) -> ToTensor (scales [0,255] to [0,1]) -> Normalize(mean={train_mean}, std={train_std})")
-    print(f"  2.2 Inference Transform: Resize((224, 224)) -> ToTensor -> Normalize(mean={train_mean}, std={train_std})")
+    print(f"  2.1 Training transform provenance: not embedded in checkpoint; verify against training config before claiming parity")
+    print(f"  2.2 Active inference transform: shared RGB resize to {image_size}x{image_size}, ToTensor scaling, Normalize(mean={train_mean}, std={train_std})")
     sample_img = Image.open(sample_paths[0]).convert('RGB')
     tensor_img = transform(sample_img)
     print(f"  2.3 Sample Preprocessed Tensor Stats: shape={list(tensor_img.shape)}, min={tensor_img.min().item():.3f}, max={tensor_img.max().item():.3f}, mean={tensor_img.mean().item():.3f}")
     print(f"  2.4 Color Channel Format: RGB (standard PIL convert('RGB'))")
-    print(f"  2.5 Preprocessing Consistency: PASS (Train and inference pipelines are identical)")
+    print(f"  2.5 Inference uses the shared plant preprocessing function")
 
     # -------------------------------------------------------------
     # CHECK 3: MODEL EVAL MODE / STATE ISSUE
     # -------------------------------------------------------------
     print("\n[CHECK 3] MODEL EVAL MODE / STATE ISSUE")
     print("-" * 70)
-    plant_ckpt_path = "ai/models/image_classification/plant_resnet9_best.pt"
-    animal_ckpt_path = "ai/models/image_classification/animal_resnet9_best.pt"
-    
-    ckpt_plant = torch.load(plant_ckpt_path, map_location='cpu', weights_only=False)
-    classes_plant = ckpt_plant['classes']
-    model_state_plant = ckpt_plant['model_state']
-    
-    model = ResNet9(in_channels=3, num_classes=len(classes_plant))
-    load_res = model.load_state_dict(model_state_plant)
-    print(f"  3.1 Plant ResNet9 Checkpoint Loaded: {len(classes_plant)} classes, keys in state_dict={len(model_state_plant)}")
-    print(f"  3.2 Architecture Match: {load_res}")
-    
-    model.eval()
+    model = plant_bundle["model"]
+    print(f"  3.1 Plant ResNet9 Checkpoint Loaded: {len(classes_plant)} classes, output neurons={plant_bundle['output_count']}")
+    print(f"  3.2 Architecture: {plant_bundle['architecture']}; checkpoint path={plant_bundle['_resolved_path']}")
+
     print(f"  3.3 Model eval mode active: model.training = {model.training} (BatchNorm running stats frozen, Dropout disabled)")
     print(f"  3.4 Model State Verification: PASS")
 
@@ -124,11 +122,11 @@ def run_diagnostics():
         print(f"  4.2 Class Sample Range: min={min(counts)}, max={max(counts)}, mean={np.mean(counts):.1f}")
         print(f"  4.3 Imbalance Mitigation: Undersampling capped at 100 images/class during training (balanced subsets).")
     
-    with open("ai/models/image_classification/plant_classes.json", "r") as f:
+    with open("ai/models/image_classification/class_names.json", "r", encoding="utf-8") as f:
         saved_classes = json.load(f)
-    mapping_identical = (saved_classes == classes_plant)
-    print(f"  4.4 Checkpoint 'classes' vs plant_classes.json: {'EXACT MATCH (100% consistent)' if mapping_identical else 'MISMATCH'}")
-    print(f"  4.5 Class Encoding Verification: PASS")
+    mapping_identical = saved_classes == classes_plant
+    print(f"  4.4 Checkpoint 'classes' vs canonical class_names.json: {'EXACT MATCH' if mapping_identical else 'MISMATCH'}")
+    print(f"  4.5 Class Encoding Verification: {'PASS' if mapping_identical else 'FAIL'}")
 
     # -------------------------------------------------------------
     # CHECK 5: LEARNING RATE / DEAD NETWORK & RAW LOGITS ACROSS 5 IMAGES
@@ -206,7 +204,7 @@ def run_diagnostics():
     train_model.train()
     opt.zero_grad()
     
-    dummy_x = torch.randn(4, 3, 224, 224)
+    dummy_x = torch.randn(4, 3, image_size, image_size)
     dummy_y = torch.tensor([0, 1, 2, 3])
     out = train_model(dummy_x)
     loss = crit(out, dummy_y)

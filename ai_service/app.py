@@ -34,8 +34,11 @@ if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
 from ai.plant_inference import (
+    PlantImageInputError,
+    inspect_plant_dataset,
     load_plant_model,
-    predict_with_top3,
+    plant_display_name,
+    predict,
     preprocess_plant_image,
 )
 
@@ -111,17 +114,7 @@ def choose_plant_heuristic_label(image_stats, model_label=None):
 
 
 def format_plant_display_name(label):
-    if not label:
-        return 'Unknown Plant Condition'
-    if '___' not in label:
-        return str(label).replace('_', ' ').title()
-
-    crop_name, disease_name = label.split('___', 1)
-    crop_name = crop_name.replace('_', ' ').title()
-    disease_name = disease_name.replace('_', ' ').title()
-    if disease_name.lower() == 'healthy':
-        return f'{crop_name} Healthy Leaf'
-    return f'{crop_name} {disease_name}'
+    return plant_display_name(label)
 
 # model loader in the service
 try:
@@ -183,6 +176,18 @@ def get_cached_resnet_model(model_key, classes, model_state):
 
 
 def verify_and_load_model_startup(candidates, model_name):
+    if model_name == 'Plant Disease Model':
+        checkpoint = load_plant_model(device='cpu')
+        logger.info(
+            "Plant startup selection uses canonical checkpoint=%s "
+            "architecture=%s output_neurons=%d label_count=%d",
+            checkpoint['_resolved_path'],
+            checkpoint['architecture'],
+            checkpoint['output_count'],
+            len(checkpoint['classes']),
+        )
+        return checkpoint
+
     import time
     if isinstance(candidates, str):
         candidates = [candidates]
@@ -369,15 +374,40 @@ async def startup_event():
         
         # Plant inference and offline evaluation share one checkpoint and class list.
         PLANT_CHECKPOINT = load_plant_model(device='cpu')
-        if len(PLANT_CHECKPOINT['classes']) != len(set(PLANT_CHECKPOINT['classes'])):
-            raise ValueError("Plant class names must be unique")
         logger.info(
-            "Loaded classes=%d from plant checkpoint %s at %dx%d",
-            len(PLANT_CHECKPOINT['classes']),
+            "Plant model ready: checkpoint=%s architecture=%s output_neurons=%d "
+            "label_count=%d training_class_count=%d mapping_source=%s input_size=%dx%d",
             PLANT_CHECKPOINT['_resolved_path'],
+            PLANT_CHECKPOINT['architecture'],
+            PLANT_CHECKPOINT['output_count'],
+            len(PLANT_CHECKPOINT['classes']),
+            PLANT_CHECKPOINT['training_class_count'],
+            PLANT_CHECKPOINT['class_mapping_source'],
             PLANT_CHECKPOINT['img_size'],
             PLANT_CHECKPOINT['img_size'],
         )
+        dataset_info = inspect_plant_dataset(
+            Path(ROOT_DIR) / "datasets" / "plant_disease" / "data",
+            PLANT_CHECKPOINT['classes'],
+        )
+        logger.info(
+            "Plant dataset check: path=%s available=%s directory_classes=%s "
+            "images=%s missing_classes=%s unsupported_directories=%s",
+            dataset_info['path'],
+            dataset_info['available'],
+            dataset_info['directory_class_count'],
+            dataset_info['image_count'],
+            dataset_info['missing_classes'],
+            dataset_info['unsupported_directories'],
+        )
+        if dataset_info['available'] and (
+            dataset_info['missing_classes'] or dataset_info['unsupported_directories']
+        ):
+            raise ValueError(
+                "Plant dataset directories do not match the verified model mapping: "
+                f"missing={dataset_info['missing_classes']}, "
+                f"unsupported={dataset_info['unsupported_directories']}"
+            )
         
         # Verify and load Animal model
         ANIMAL_CHECKPOINT = verify_and_load_model_startup(
@@ -583,90 +613,28 @@ ANIMAL_DISEASE_METADATA = {
 
 
 def resolve_plant_disease_details(disease_name: str):
-    dn = disease_name.lower()
-    
-    if "healthy" in dn:
-        crop_prefix = disease_name.split("___")[0].replace("_", " ").title() if "___" in disease_name else "Crop"
-        disease = f"{crop_prefix} Healthy Leaf"
+    disease = format_plant_display_name(disease_name)
+    if "healthy" in disease_name.lower():
         severity = 0.0
-        desc = f"The {crop_prefix.lower()} foliage appears healthy with no visible signs of infectious disease."
-        symptoms = "None. Green, normal leaf turgor and structure."
-        actions = "Maintain regular monitoring, watering, and fertilization."
-        chemical = "None."
-        organic = "None needed. Keep utilizing organic compost."
-        prevent = "Maintain good sanitation and weed control."
-        treatment = "No treatment required."
-    elif "potato" in dn:
-        if "late" in dn or "blight" in dn:
-            disease = "Potato Late Blight (Phytophthora infestans)"
-            severity = 0.75
-            desc = "Late blight is a devastating disease caused by the water mold Phytophthora infestans."
-            symptoms = "Dark, water-soaked patches on leaves that enlarge rapidly, white velvet mold on leaf undersides, dry rot in tubers."
-            actions = "Destroy infected foliage. Halt overhead sprinkling; apply drip irrigation instead."
-            chemical = "Apply Mancozeb @ 2g/liter or Metalaxyl-M + Mancozeb formulation @ 2.5g/liter."
-            organic = "Spray copper oxychloride suspensions. Ensure proper earthing-up."
-            prevent = "Plant certified disease-free seed tubers. Keep a minimum 3-year crop rotation."
-            treatment = "Apply late blight fungicides (Mancozeb or Metalaxyl-M) immediately. Stop overhead watering."
-        else:
-            disease = "Potato Early Blight (Alternaria solani)"
-            severity = 0.35
-            desc = "Early blight is caused by the fungus Alternaria solani. It primarily affects older foliage, causing defoliation."
-            symptoms = "Dark spots with concentric target-like rings on older leaves, yellowing and leaf drops."
-            actions = "Prune lower leaves that touch the ground. Apply straw mulch."
-            chemical = "Spray Chlorothalonil @ 2g/liter or Copper fungicides at 7-10 day intervals."
-            organic = "Apply compost tea or spray Bacillus subtilis formulations."
-            prevent = "Rotate crops. Maintain proper soil fertilization. Avoid overhead irrigation."
-            treatment = "Apply Early Blight fungicides (Chlorothalonil or Copper). Prune infected lower foliage."
-    elif "tomato" in dn:
-        disease = "Tomato Early Blight (Alternaria solani)"
-        severity = 0.35
-        desc = "Early blight is caused by the fungus Alternaria solani. It primarily affects older foliage, causing defoliation."
-        symptoms = "Dark spots with concentric target-like rings on older leaves, yellowing and leaf drops."
-        actions = "Prune lower leaves that touch the ground. Apply straw mulch."
-        chemical = "Spray Chlorothalonil @ 2g/liter or Copper fungicides at 7-10 day intervals."
-        organic = "Apply compost tea or spray Bacillus subtilis formulations."
-        prevent = "Rotate crops. Maintain proper soil fertilization. Avoid overhead irrigation."
-        treatment = "Apply Early Blight fungicides (Chlorothalonil or Copper). Prune infected lower foliage."
-    elif "corn" in dn or "maize" in dn or "rust" in dn:
-        disease = "Corn Common Rust (Puccinia sorghi)"
-        severity = 0.30
-        desc = "Common rust is caused by the fungus Puccinia sorghi. It is favored by high humidity."
-        symptoms = "Golden-brown to reddish-orange powdery pustules on both upper and lower leaf surfaces."
-        actions = "Tillage to bury infected crop residues. Harvest early if crop is mature."
-        chemical = "Foliar application of Mancozeb or Pyraclostrobin if rust appears early."
-        organic = "Dust with sulfur powder. Use neem oil extracts."
-        prevent = "Plant rust-resistant hybrids. Balance nitrogen application."
-        treatment = "Apply rust-specific fungicides if infestation is early. Prune heavily infested foliage."
-    elif "rice" in dn:
-        disease = "Rice Blast (Magnaporthe oryzae)"
-        severity = 0.45
-        desc = "Rice blast is caused by the fungus Magnaporthe oryzae. It is one of the most destructive diseases of rice worldwide."
-        symptoms = "Spindle-shaped spots on leaves with gray or whitish centers and brown borders. Leaf collar rot and neck rot."
-        actions = "Avoid excessive nitrogen application. Keep fields flooded. Remove infected crop residues."
-        chemical = "Foliar spray of Tricyclazole 75% WP @ 120g/acre or Carbendazim 50% WP @ 200g/acre."
-        organic = "Spray Pseudomonas fluorescens formulation @ 5g/liter or Neem oil @ 3%."
-        prevent = "Use resistant rice varieties. Treat seeds before sowing. Maintain proper spacing."
-        treatment = "Spray Tricyclazole or Carbendazim. Regulate nitrogen application and irrigation."
+        desc = f"The classifier found no visible disease signs for {disease}."
+        symptoms = "No disease symptoms were identified by the classifier."
+        actions = "Continue routine crop monitoring and care."
+        chemical = "None indicated by the classifier."
+        organic = "None indicated by the classifier."
+        prevent = "Maintain routine crop hygiene and monitoring."
+        treatment = "No treatment is indicated by this classification."
     else:
-        if "___" in disease_name:
-            crop_prefix, disease_suffix = disease_name.split("___", 1)
-            crop_prefix = crop_prefix.replace("_", " ").title()
-            disease_suffix = disease_suffix.replace("_", " ").title()
-            disease = f"{crop_prefix} {disease_suffix}"
-        else:
-            disease = disease_name.replace("_", " ").title()
-            parts = disease.split()
-            crop_prefix = parts[0] if len(parts) > 0 else "Crop"
-            disease_suffix = " ".join(parts[1:]) if len(parts) > 1 else "Infection"
-            
-        severity = 0.50
-        desc = f"{disease} is an agricultural pathology affecting {crop_prefix} plants, which can disrupt photosynthesis and potentially impact crop yield."
-        symptoms = f"Visual signs of {disease_suffix.lower()} (spots, lesions, mold, or discoloration) on the leaves of the {crop_prefix} plant."
-        actions = f"Isolate affected {crop_prefix} plants, prune heavily infected foliage, and ensure proper field sanitation."
-        chemical = f"Apply a crop-approved broad-spectrum fungicide or bactericide suitable for {crop_prefix} protection."
-        organic = "Spray organic neem oil extract (3% solution) or copper oxychloride to suppress pathogen spread."
-        prevent = f"Utilize certified disease-free seed/clones, practice crop rotation, and maintain balanced NPK nutrition."
-        treatment = f"Apply appropriate treatment (chemical: {chemical} or organic: {organic}) and regulate field irrigation."
+        severity = 0.5
+        desc = (
+            f"The image classifier assigned this image to {disease}. "
+            "This is an automated visual result, not a confirmed diagnosis."
+        )
+        symptoms = "Symptoms vary; verify the result against the plant and field conditions."
+        actions = "Inspect the plant and seek local agricultural guidance before treatment."
+        chemical = "Not specified; confirm the diagnosis and use only crop-approved products."
+        organic = "Not specified; confirm the diagnosis before applying a treatment."
+        prevent = "Use routine crop hygiene and monitor nearby plants."
+        treatment = "Confirm the diagnosis with an agricultural specialist before treatment."
 
     return {
         "diseaseName": disease,
@@ -683,49 +651,62 @@ def resolve_plant_disease_details(disease_name: str):
 @app.post("/api/predictPlant")
 async def predict_plant(file: UploadFile = File(...)):
     global PLANT_CHECKPOINT
-    logger.info(f"🌱 Plant disease prediction requested for file: {file.filename}")
+    logger.info("Plant disease prediction requested")
     
     try:
         if PLANT_CHECKPOINT is None:
             raise HTTPException(status_code=500, detail="Plant classification model is not loaded")
 
         contents = await file.read()
+        if not contents:
+            raise HTTPException(status_code=400, detail="No image data was provided")
         classes = PLANT_CHECKPOINT.get('classes')
         model = PLANT_CHECKPOINT['model']
-        prediction, top3 = predict_with_top3(
+        prediction = predict(
             model,
             classes,
             contents,
             image_size=PLANT_CHECKPOINT['img_size'],
         )
-        top_idx = int(prediction['index'])
-        disease = str(prediction['label'])
+        top_idx = int(prediction['class_index'])
+        disease = str(prediction['class_id'])
+        display_label = str(prediction['label'])
         confidence = float(prediction['confidence']) * 100.0
-            
-        # Step 5: Verify Class Mapping
-        print(f"=== Class Mapping Verification for Plant Disease Model ===", flush=True)
-        if top_idx < 0 or top_idx >= len(classes):
-            raise ValueError(f"Predicted class index {top_idx} is outside the class list")
-        print(f"Predicted class index: {top_idx}", flush=True)
-        print(f"Predicted class label: {disease}", flush=True)
-        print(f"Label loaded from checkpoint classes list: {classes[top_idx]}", flush=True)
-        
-        # Step 6: Verify Disease Metadata
+        if top_idx < 0 or top_idx >= len(classes) or classes[top_idx] != disease:
+            raise ValueError(
+                f"Predicted index {top_idx} does not map to class identifier {disease!r}"
+            )
+        logger.info(
+            "Plant prediction: checkpoint=%s architecture=%s tensor_shape=%s "
+            "output_neurons=%d label_count=%d class_index=%d class_id=%s "
+            "display_label=%s confidence=%.6f uncertain=%s",
+            PLANT_CHECKPOINT['_resolved_path'],
+            PLANT_CHECKPOINT['architecture'],
+            prediction['tensor_shape'],
+            PLANT_CHECKPOINT['output_count'],
+            len(classes),
+            top_idx,
+            disease,
+            display_label,
+            confidence / 100.0,
+            prediction['uncertain'],
+        )
+
         meta = resolve_plant_disease_details(disease)
-        print(f"=== Disease Metadata Verification for Plant Disease Model ===", flush=True)
-        print(f"Metadata lookup key: {disease}", flush=True)
-        print(f"Selected metadata: {meta}", flush=True)
-        
         top3_preds = [
             {
-                "class": format_plant_display_name(str(item['class'])),
+                "classId": item['class_id'],
+                "classIndex": item['class_index'],
+                "class": item['label'],
                 "confidence": float(item['confidence']) * 100.0
             }
-            for item in top3
+            for item in prediction['top_k']
         ]
         
         return {
-            'diseaseName': format_plant_display_name(disease),
+            'diseaseName': display_label,
+            'classId': disease,
+            'classIndex': top_idx,
             'confidence': confidence,
             'severityScore': meta['severityScore'],
             'description': meta['description'],
@@ -737,13 +718,15 @@ async def predict_plant(file: UploadFile = File(...)):
             'preventiveMeasures': meta['preventiveMeasures'],
             'source': 'model',
             'top3Predictions': top3_preds,
-            'uncertain': confidence < 60.0
+            'uncertain': prediction['uncertain']
         }
+    except PlantImageInputError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"❌ Plant model-based inference failed: {str(e)}", exc_info=True)
         if isinstance(e, HTTPException):
             raise e
-        raise HTTPException(status_code=500, detail=f"Model inference failed: {str(e)}")
+        logger.error("Plant model inference failed", exc_info=True)
+        raise HTTPException(status_code=500, detail="Plant image inference failed") from e
 
 
 @app.post("/api/predictAnimal")
